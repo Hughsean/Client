@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { ElMessage } from "element-plus";
+import { messageError } from "../../utils/message";
 import { AdminApi, ConversationsApi } from "../../server";
 import type {
   User,
@@ -20,6 +20,10 @@ import {
 } from "../../utils/risk";
 import RiskMessageList from "./RiskMessageList.vue";
 import RiskFloatCard from "./RiskFloatCard.vue";
+import UiSkeleton from '../ui/UiSkeleton.vue'
+import UiEmpty from '../ui/UiEmpty.vue'
+import UiTag from '../ui/UiTag.vue'
+import UiTooltip from '../ui/UiTooltip.vue'
 import { formatToCN } from "../../utils/time";
 
 const props = defineProps<{ userId: number | null; user: User | null }>();
@@ -95,7 +99,7 @@ async function load(userId: number) {
       selectConversation(merged[0].conversationId);
     }
   } catch (e: any) {
-    ElMessage.error(e?.message || "加载对话失败");
+    messageError(e?.message || "加载对话失败");
   } finally {
     loading.value = false;
   }
@@ -140,7 +144,7 @@ async function loadMessages(convId: number) {
     })) as AdminConversationMessage[];
     pickInitialMessage(conv);
   } catch {
-    ElMessage.error("加载消息失败");
+    messageError("加载消息失败");
   }
 }
 
@@ -268,9 +272,9 @@ function riskItemStyle(level?: RiskLevel) {
   <div class="risk-aside-layout">
     <aside class="aside">
       <h3 class="aside-title">风险对话 - {{ title }}</h3>
-      <el-skeleton :loading="loading" animated :rows="6">
+      <UiSkeleton :loading="loading" :rows="6">
         <template #default>
-          <el-empty v-if="!convos.length" description="暂无对话" />
+          <UiEmpty v-if="!convos.length" description="暂无对话" />
           <ul v-else class="conv-list">
             <li
               v-for="c in convos"
@@ -289,14 +293,14 @@ function riskItemStyle(level?: RiskLevel) {
                     c.title || "（无标题）"
                   }}</span>
                 </div>
-                <el-tag size="small" :style="tagStyle(c.aggregatedRiskLevel)">{{
+                <UiTag :style="tagStyle(c.aggregatedRiskLevel)">{{
                   riskLevelCN(c.aggregatedRiskLevel)
-                }}</el-tag>
+                }}</UiTag>
               </div>
             </li>
           </ul>
         </template>
-      </el-skeleton>
+      </UiSkeleton>
     </aside>
     <main class="main" v-if="currentConv">
       <div class="main-header">
@@ -305,9 +309,7 @@ function riskItemStyle(level?: RiskLevel) {
           <small>{{ currentConv?.title || "（无标题）" }}</small>
         </h3>
         <div class="meta">
-          <el-tag :style="tagStyle(currentConv?.aggregatedRiskLevel)"
-            >聚合：{{ riskLevelCN(currentConv?.aggregatedRiskLevel) }}</el-tag
-          >
+          <UiTag :style="tagStyle(currentConv?.aggregatedRiskLevel)">聚合：{{ riskLevelCN(currentConv?.aggregatedRiskLevel) }}</UiTag>
           <span class="time">{{ formatToCN(currentConv?.createdAt) }}</span>
         </div>
       </div>
@@ -323,7 +325,7 @@ function riskItemStyle(level?: RiskLevel) {
         >
           <template #indicator="{ message }">
             <template v-if="String(message.role).toLowerCase() === 'user'">
-              <el-tooltip placement="top" effect="light" :hide-after="0">
+              <UiTooltip>
                 <template #content>
                   <div class="tt">
                     <div>
@@ -394,8 +396,7 @@ function riskItemStyle(level?: RiskLevel) {
                     </div>
                   </div>
                 </template>
-                <el-tag
-                  size="small"
+                <UiTag
                   class="risk-indicator"
                   :style="tagStyle(getFirstDetectionOrNone(currentConv, message.id as number)?.riskLevel)"
                 >
@@ -405,12 +406,12 @@ function riskItemStyle(level?: RiskLevel) {
                         ?.riskLevel
                     )
                   }}
-                </el-tag>
-              </el-tooltip>
+                </UiTag>
+              </UiTooltip>
             </template>
           </template>
         </RiskMessageList>
-        <el-empty v-else description="未选中会话" />
+        <UiEmpty v-else description="未选中会话" />
       </div>
     </main>
 
@@ -428,119 +429,199 @@ function riskItemStyle(level?: RiskLevel) {
 .risk-aside-layout {
   display: flex;
   height: calc(100vh - 140px);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   overflow: hidden;
-  font-size: 15px;
+  font-size: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
 }
+
 .aside {
   width: 310px;
-  border-right: 1px solid var(--el-border-color-lighter);
-  background: #fafafa;
+  border-right: 1px solid var(--border-subtle);
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.03), rgba(6, 182, 212, 0.03));
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(5px);
 }
+
 .aside-title {
   margin: 0;
-  padding: 14px 14px 10px;
-  font-size: 18px;
-  font-weight: 600;
+  padding: 16px 16px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-on-bg);
+  letter-spacing: -0.3px;
+  border-bottom: 1px solid var(--border-subtle);
 }
+
 .conv-list {
   list-style: none;
   margin: 0;
-  padding: 0 10px 14px;
+  padding: 10px;
   overflow: auto;
-}
-.conv-list .risk-item {
-  padding: 10px 10px 12px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  transition: 0.15s;
-  font-size: 14px;
 }
+
+.conv-list .risk-item {
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 13px;
+  background: var(--surface-2);
+}
+
 .conv-list .risk-item:hover {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border-color: var(--accent);
+  background: var(--surface-3);
+  box-shadow: 0 0 12px rgba(100, 255, 218, 0.1);
 }
+
 .conv-list .risk-item.active {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
+  background: rgba(100, 255, 218, 0.1);
+  box-shadow: inset 0 0 12px rgba(100, 255, 218, 0.08);
 }
+
 .conv-list .line-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
+
 .conv-list .cid-title {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
 }
+
 .conv-list .cid {
-  font-weight: 600;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
+
 .conv-list .title {
-  font-size: 14px;
-  color: var(--el-text-color-primary);
+  font-size: 13px;
+  color: var(--text-on-bg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
+  font-weight: 600;
 }
+
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
   padding: 16px 20px;
   overflow: hidden;
-  font-size: 15px;
+  font-size: 14px;
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.02), rgba(6, 182, 212, 0.02));
 }
+
 .main-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  padding-bottom: 8px;
-  margin-bottom: 10px;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
 }
+
 .conv-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-on-bg);
+  letter-spacing: -0.3px;
 }
+
+.conv-title small {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
 .meta {
   display: flex;
   align-items: center;
   gap: 16px;
-  font-size: 14px;
+  font-size: 13px;
 }
+
+.meta .time {
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
 .messages-block {
   flex: 1;
   overflow: auto;
-  padding-right: 4px;
+  padding-right: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 8px;
 }
+
 .tt {
   display: grid;
   grid-template-columns: 80px 1fr;
   gap: 6px 10px;
   max-width: 380px;
-  font-size: 13px;
+  font-size: 12px;
 }
+
 .tt label {
-  color: var(--el-text-color-secondary);
-  font-weight: 500;
+  color: var(--accent);
+  font-weight: 600;
 }
+
+.tt span {
+  color: var(--text-secondary);
+}
+
 .tt em {
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   font-style: normal;
   grid-column: 1 / -1;
-  font-size: 12px;
+  font-size: 11px;
+}
+
+/* 滚动条美化 */
+.conv-list::-webkit-scrollbar,
+.messages-block::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conv-list::-webkit-scrollbar-track,
+.messages-block::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conv-list::-webkit-scrollbar-thumb,
+.messages-block::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 255, 218, 0.2);
+  border-radius: 3px;
+}
+
+.conv-list::-webkit-scrollbar-thumb:hover,
+.messages-block::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 255, 218, 0.4);
 }
 </style>

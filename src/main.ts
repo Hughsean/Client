@@ -1,7 +1,6 @@
 import { createApp } from "vue";
 import App from "./App.vue";
-// Element Plus 全量引入（简单直接）
-import "element-plus/dist/index.css";
+import router from "./router";
 // 全局样式：放大基础字体和 Element Plus 基础字号
 import "./assets/styles/global.css";
 import { updateApiConfig } from "./server";
@@ -11,9 +10,11 @@ import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 // 浏览器开发环境走 Vite 代理（/api -> http://localhost:8080），避免 CORS。
 
 updateApiConfig({
-    baseURL: 'http://10.13.19.91:8080',
+    baseURL: 'http://127.0.0.1:8080',
     timeoutMs: 10000,
     customFetch: tauriFetch
 });
 
-createApp(App).mount("#app");
+const app = createApp(App);
+app.use(router);
+app.mount("#app");

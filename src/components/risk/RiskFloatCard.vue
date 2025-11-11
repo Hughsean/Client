@@ -6,6 +6,7 @@ import {
   onMounted,
   onBeforeUnmount,
 } from "vue";
+import UiEmpty from '../ui/UiEmpty.vue'
 import { formatToCN } from "../../utils/time";
 import {
   tagStyle,
@@ -120,7 +121,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
               </div>
             </div>
           </template>
-          <el-empty v-else description="暂无评测" />
+          <UiEmpty v-else description="暂无评测" />
         </div>
       </div>
     </div>
@@ -134,65 +135,110 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   z-index: 9999;
 }
+
 .float-card {
   width: 520px;
-  /* 采用薄荷浅色背景，保持卡片可读 */
-  background: linear-gradient(135deg, var(--bg-grad-2), #ffffff);
-  border: 1px solid var(--el-border-color-lighter);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, rgba(15, 22, 40, 0.95), rgba(21, 31, 63, 0.95));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-elevated);
   border-radius: 12px;
   overflow: hidden;
+  backdrop-filter: blur(10px);
+  animation: slideUp 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .float-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  background: linear-gradient(135deg, rgba(52,211,153,0.12), rgba(16,185,129,0.06));
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.2), rgba(6, 182, 212, 0.1));
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-on-bg);
+  letter-spacing: 0.3px;
 }
+
 .float-card-content {
-  padding: 12px;
+  padding: 16px;
   max-height: 70vh;
   overflow: auto;
 }
+
+.summary {
+  padding: 12px;
+  background: rgba(100, 255, 218, 0.05);
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
 .risk-pill {
   display: inline-block;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid currentColor;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid;
   font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
 }
+
 .meta {
-  margin-top: 8px;
-  color: var(--el-text-color-secondary);
+  margin-top: 10px;
+  color: var(--text-secondary);
   display: flex;
-  gap: 12px;
+  gap: 16px;
+  font-size: 13px;
 }
+
 .chips {
-  margin-top: 8px;
+  margin-top: 10px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
+
 .chip {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
   font-size: 12px;
-  color: #fff;
+  font-weight: 500;
+  border: 1px solid;
 }
+
 .chip-intent {
-  background: linear-gradient(135deg, var(--accent-200), var(--accent-400));
+  background: rgba(109, 40, 217, 0.15);
+  color: #a78bfa;
+  border-color: rgba(109, 40, 217, 0.3);
 }
+
 .chip-target {
-  background: linear-gradient(135deg, #79f4d0, #34d399);
+  background: rgba(6, 182, 212, 0.15);
+  color: #64ffda;
+  border-color: rgba(6, 182, 212, 0.3);
 }
+
 .chip-polarity {
-  background: linear-gradient(135deg, #bff3e6, #10b981);
+  background: rgba(236, 72, 153, 0.15);
+  color: #f472b6;
+  border-color: rgba(236, 72, 153, 0.3);
 }
 
 .all-detections {
@@ -201,50 +247,129 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
   flex-direction: column;
   gap: 10px;
 }
+
 .d-item {
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px;
-  background: linear-gradient(180deg, rgba(139,252,227,0.35), rgba(255,255,255,0.7));
-  border: 1px solid rgba(16,185,129,0.12);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  transition: all 200ms ease;
 }
+
+.d-item:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(100, 255, 218, 0.1);
+}
+
 .d-head {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
 }
+
 .d-index {
-  color: var(--el-text-color-secondary);
-  font-weight: 600;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 12px;
 }
+
 .d-pill {
   font-weight: 600;
   padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid currentColor;
+  border-radius: 4px;
+  border: 1px solid;
+  font-size: 12px;
 }
+
 .d-time {
   margin-left: auto;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  white-space: nowrap;
 }
+
 .d-row {
-  margin-bottom: 6px;
-}
-.d-evidence ul {
-  margin: 4px 0 0 18px;
-}
-.note {
-  margin-top: 6px;
-  color: var(--el-text-color-secondary);
+  margin-bottom: 8px;
+  color: var(--text-secondary);
   font-size: 13px;
+  line-height: 1.5;
+}
+
+.d-row strong {
+  color: var(--accent);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.d-evidence {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.d-evidence strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.d-evidence ul {
+  margin: 6px 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.d-evidence li {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 4px 0;
+  position: relative;
+  padding-left: 12px;
+}
+
+.d-evidence li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+.note {
+  margin-top: 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-style: italic;
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity 200ms ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* 滚动条美化 */
+.float-card-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.float-card-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.float-card-content::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 255, 218, 0.2);
+  border-radius: 3px;
+}
+
+.float-card-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 255, 218, 0.4);
 }
 </style>
