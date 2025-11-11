@@ -19,6 +19,7 @@ const profilesApi = new ProfilesApi();
 const loading = ref(false);
 const saving = ref(false);
 const localVisible = ref(false);
+const isEditing = ref(false);
 
 // Profile 各分类以字符串数组形式编辑（SDK 已将响应对齐为 string[]）
 const interests = ref<string[]>([]);
@@ -26,6 +27,19 @@ const traits = ref<string[]>([]);
 const preferences = ref<string[]>([]);
 const emotions = ref<string[]>([]);
 const learnings = ref<string[]>([]);
+
+// 备份数据用于取消编辑
+const backupData = ref<{
+  interests: string[];
+  traits: string[];
+  preferences: string[];
+  emotions: string[];
+}>({
+  interests: [],
+  traits: [],
+  preferences: [],
+  emotions: [],
+});
 
 async function loadProfile(id: number) {
   loading.value = true;
@@ -38,6 +52,14 @@ async function loadProfile(id: number) {
     preferences.value = p?.interactionPreferences ?? [];
     emotions.value = p?.emotionalTendency ?? [];
     learnings.value = p?.learningRecords ?? [];
+    
+    // 保存备份
+    backupData.value = {
+      interests: [...interests.value],
+      traits: [...traits.value],
+      preferences: [...preferences.value],
+      emotions: [...emotions.value],
+    };
   } catch (e: any) {
     messageError(e?.message || "加载 Profile 失败");
   } finally {
@@ -56,7 +78,29 @@ watch([() => props.visible, () => props.userId], ([v, id]) => {
 });
 
 function closeDrawer() {
+  isEditing.value = false;
   emit("close");
+}
+
+function startEditing() {
+  // 保存当前数据作为备份
+  backupData.value = {
+    interests: [...interests.value],
+    traits: [...traits.value],
+    preferences: [...preferences.value],
+    emotions: [...emotions.value],
+  };
+  isEditing.value = true;
+}
+
+function cancelEditing() {
+  // 恢复备份数据
+  interests.value = [...backupData.value.interests];
+  traits.value = [...backupData.value.traits];
+  preferences.value = [...backupData.value.preferences];
+  emotions.value = [...backupData.value.emotions];
+  isEditing.value = false;
+  messageInfo("已取消编辑");
 }
 
 function addItem(list: string[]) {
@@ -80,6 +124,16 @@ async function onSave() {
     };
     await profilesApi.save(payload);
     messageInfo("已保存 Profile");
+    isEditing.value = false;
+    
+    // 更新备份数据
+    backupData.value = {
+      interests: [...interests.value],
+      traits: [...traits.value],
+      preferences: [...preferences.value],
+      emotions: [...emotions.value],
+    };
+    
     emit("saved");
   } catch (e: any) {
     messageError(e?.message || "保存失败");
@@ -107,23 +161,37 @@ async function onSave() {
           }}</span>
         </div>
         <div class="header-actions">
-          <UiButton @click="closeDrawer">关闭</UiButton>
-          <UiButton
-            type="primary"
-            :loading="saving"
-            :disabled="!userId"
-            @click="onSave"
-            >保存</UiButton
-          >
+          <template v-if="!isEditing">
+            <UiButton
+              type="primary"
+              :disabled="!userId"
+              @click="startEditing"
+              >编辑</UiButton
+            >
+          </template>
+          <template v-else>
+            <UiButton @click="cancelEditing">取消</UiButton>
+            <UiButton
+              type="primary"
+              :loading="saving"
+              :disabled="!userId"
+              @click="onSave"
+              >保存</UiButton
+            >
+          </template>
         </div>
       </div>
       <UiSkeleton :loading="loading" :rows="6">
         <template #default>
           <!-- 兴趣 -->
-          <section class="profile-section">
+          <section class="profile-section interests">
             <div class="section-header">
               <h3 class="section-title">💡 兴趣爱好</h3>
-              <UiButton type="primary" size="small" @click="addItem(interests)"
+              <UiButton 
+                v-if="isEditing"
+                type="primary" 
+                size="small" 
+                @click="addItem(interests)"
                 >+ 新增</UiButton
               >
             </div>
@@ -133,24 +201,29 @@ async function onSave() {
                   <tr>
                     <th width="60">#</th>
                     <th>内容</th>
-                    <th width="100">操作</th>
+                    <th v-if="isEditing" width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(_, idx) in interests" :key="idx">
+                  <tr v-for="(item, idx) in interests" :key="idx">
                     <td>{{ idx + 1 }}</td>
                     <td>
                       <input
+                        v-if="isEditing"
                         v-model="interests[idx]"
                         class="profile-input"
                         placeholder="输入兴趣条目"
                       />
+                      <span v-else class="readonly-content">{{ item || '(空)' }}</span>
                     </td>
-                    <td>
+                    <td v-if="isEditing">
                       <UiButton size="small" @click="removeItem(interests, idx)"
                         >删除</UiButton
                       >
                     </td>
+                  </tr>
+                  <tr v-if="!isEditing && interests.length === 0">
+                    <td colspan="2" class="empty-state">暂无数据</td>
                   </tr>
                 </tbody>
               </table>
@@ -158,10 +231,14 @@ async function onSave() {
           </section>
 
           <!-- 性格特征 -->
-          <section class="profile-section">
+          <section class="profile-section traits">
             <div class="section-header">
               <h3 class="section-title">🎭 性格特征</h3>
-              <UiButton type="primary" size="small" @click="addItem(traits)"
+              <UiButton 
+                v-if="isEditing"
+                type="primary" 
+                size="small" 
+                @click="addItem(traits)"
                 >+ 新增</UiButton
               >
             </div>
@@ -171,22 +248,27 @@ async function onSave() {
                   <tr>
                     <th width="60">#</th>
                     <th>内容</th>
-                    <th width="100">操作</th>
+                    <th v-if="isEditing" width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(_, idx) in traits" :key="idx">
+                  <tr v-for="(item, idx) in traits" :key="idx">
                     <td>{{ idx + 1 }}</td>
                     <td>
                       <input
+                        v-if="isEditing"
                         v-model="traits[idx]"
                         class="profile-input"
                         placeholder="输入特征"
                       />
+                      <span v-else class="readonly-content">{{ item || '(空)' }}</span>
                     </td>
-                    <td>
+                    <td v-if="isEditing">
                       <UiButton size="small" @click="removeItem(traits, idx)">删除</UiButton>
                     </td>
+                  </tr>
+                  <tr v-if="!isEditing && traits.length === 0">
+                    <td colspan="2" class="empty-state">暂无数据</td>
                   </tr>
                 </tbody>
               </table>
@@ -194,10 +276,14 @@ async function onSave() {
           </section>
 
           <!-- 互动偏好 -->
-          <section class="profile-section">
+          <section class="profile-section preferences">
             <div class="section-header">
               <h3 class="section-title">💬 互动偏好</h3>
-              <UiButton type="primary" size="small" @click="addItem(preferences)"
+              <UiButton 
+                v-if="isEditing"
+                type="primary" 
+                size="small" 
+                @click="addItem(preferences)"
                 >+ 新增</UiButton
               >
             </div>
@@ -207,24 +293,29 @@ async function onSave() {
                   <tr>
                     <th width="60">#</th>
                     <th>内容</th>
-                    <th width="100">操作</th>
+                    <th v-if="isEditing" width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(_, idx) in preferences" :key="idx">
+                  <tr v-for="(item, idx) in preferences" :key="idx">
                     <td>{{ idx + 1 }}</td>
                     <td>
                       <input
+                        v-if="isEditing"
                         v-model="preferences[idx]"
                         class="profile-input"
                         placeholder="输入偏好"
                       />
+                      <span v-else class="readonly-content">{{ item || '(空)' }}</span>
                     </td>
-                    <td>
+                    <td v-if="isEditing">
                       <UiButton size="small" @click="removeItem(preferences, idx)"
                         >删除</UiButton
                       >
                     </td>
+                  </tr>
+                  <tr v-if="!isEditing && preferences.length === 0">
+                    <td colspan="2" class="empty-state">暂无数据</td>
                   </tr>
                 </tbody>
               </table>
@@ -232,10 +323,14 @@ async function onSave() {
           </section>
 
           <!-- 情绪倾向 -->
-          <section class="profile-section">
+          <section class="profile-section emotions">
             <div class="section-header">
               <h3 class="section-title">😊 情绪倾向</h3>
-              <UiButton type="primary" size="small" @click="addItem(emotions)"
+              <UiButton 
+                v-if="isEditing"
+                type="primary" 
+                size="small" 
+                @click="addItem(emotions)"
                 >+ 新增</UiButton
               >
             </div>
@@ -245,24 +340,29 @@ async function onSave() {
                   <tr>
                     <th width="60">#</th>
                     <th>内容</th>
-                    <th width="100">操作</th>
+                    <th v-if="isEditing" width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(_, idx) in emotions" :key="idx">
+                  <tr v-for="(item, idx) in emotions" :key="idx">
                     <td>{{ idx + 1 }}</td>
                     <td>
                       <input
+                        v-if="isEditing"
                         v-model="emotions[idx]"
                         class="profile-input"
                         placeholder="输入情绪倾向"
                       />
+                      <span v-else class="readonly-content">{{ item || '(空)' }}</span>
                     </td>
-                    <td>
+                    <td v-if="isEditing">
                       <UiButton size="small" @click="removeItem(emotions, idx)"
                         >删除</UiButton
                       >
                     </td>
+                  </tr>
+                  <tr v-if="!isEditing && emotions.length === 0">
+                    <td colspan="2" class="empty-state">暂无数据</td>
                   </tr>
                 </tbody>
               </table>
@@ -270,9 +370,10 @@ async function onSave() {
           </section>
 
           <!-- 学习记录 -->
-          <section class="profile-section">
+          <section class="profile-section learnings">
             <div class="section-header">
               <h3 class="section-title">📚 学习记录</h3>
+              <span class="readonly-badge">只读</span>
             </div>
             <div class="section-content">
               <table class="profile-table">
@@ -280,24 +381,15 @@ async function onSave() {
                   <tr>
                     <th width="60">#</th>
                     <th>内容</th>
-                    <th width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(_, idx) in learnings" :key="idx">
+                  <tr v-for="(item, idx) in learnings" :key="idx">
                     <td>{{ idx + 1 }}</td>
-                    <td>
-                      <input
-                        v-model="learnings[idx]"
-                        class="profile-input"
-                        placeholder="输入学习记录"
-                      />
-                    </td>
-                    <td>
-                      <UiButton size="small" @click="removeItem(learnings, idx)"
-                        >删除</UiButton
-                      >
-                    </td>
+                    <td class="readonly-content">{{ item || '(空)' }}</td>
+                  </tr>
+                  <tr v-if="learnings.length === 0">
+                    <td colspan="2" class="empty-state">暂无学习记录</td>
                   </tr>
                 </tbody>
               </table>
@@ -313,7 +405,8 @@ async function onSave() {
 .user-details {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-2xl, 2rem);
+  padding: var(--spacing-md);
 }
 
 .user-details__header {
@@ -361,13 +454,26 @@ async function onSave() {
 }
 
 .profile-section {
-  background: rgba(28, 33, 40, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(28, 33, 40, 0.6) 0%, rgba(22, 27, 34, 0.8) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(100, 255, 218, 0.15);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl, 1.5rem);
+  margin-bottom: var(--spacing-xl, 1.5rem);
   animation: slideInFromRight 0.3s ease-out;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: all var(--transition-base);
+}
+
+.profile-section:hover {
+  border-color: rgba(100, 255, 218, 0.3);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(100, 255, 218, 0.1);
+  transform: translateY(-2px);
+}
+
+.profile-section:last-child {
+  margin-bottom: 0;
 }
 
 .section-header {
@@ -380,11 +486,12 @@ async function onSave() {
 .section-title {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   font-size: var(--font-size-xl);
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .section-content {
@@ -395,15 +502,16 @@ async function onSave() {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  background: rgba(22, 27, 34, 0.4);
+  background: rgba(22, 27, 34, 0.6);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border-radius: var(--radius-md);
   overflow: hidden;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .profile-table thead {
-  background: rgba(28, 33, 40, 0.6);
+  background: linear-gradient(135deg, rgba(28, 33, 40, 0.8) 0%, rgba(22, 27, 34, 0.9) 100%);
 }
 
 .profile-table th {
@@ -422,7 +530,7 @@ async function onSave() {
 }
 
 .profile-table tbody tr:hover {
-  background: var(--surface-hover);
+  background: rgba(100, 255, 218, 0.05);
 }
 
 .profile-table td {
@@ -451,11 +559,40 @@ async function onSave() {
 .profile-input:focus {
   border-color: var(--primary-cyan);
   background: var(--bg-dark-3);
-  box-shadow: 0 0 0 3px var(--primary-cyan-glow);
+  box-shadow: 0 0 0 3px var(--primary-cyan-glow), 0 4px 12px rgba(100, 255, 218, 0.15);
 }
 
 .profile-input::placeholder {
   color: var(--text-muted);
+}
+
+.readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(100, 100, 100, 0.2);
+  border: 1px solid rgba(100, 100, 100, 0.3);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.readonly-content {
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  padding: var(--spacing-md);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: var(--spacing-xl) var(--spacing-md);
 }
 
 @keyframes slideInFromRight {
