@@ -2,7 +2,7 @@
 
 轻量 TypeScript 前端调用库，Browser/Node/Tauri 通用，按控制器分模块导出 API，内置超时、重试、拦截器、错误统一与 ApiResponse 自动解包。
 
-**版本：0.2.0**
+**版本：0.3.0**
 
 ## 安装
 
@@ -119,7 +119,7 @@ try {
 
 - `UsersApi`: 用户 CRUD、登录
 - `AdminApi`: 管理端用户列表
-- `ProfilesApi`: 用户画像 CRUD
+- `ProfilesApi`: 用户画像 CRUD（响应已对齐 DTO，JSON 字段为字符串数组）
 - `SignatureApi`: 签名创建/校验
 - `LlmSessionsApi`: LLM 会话管理与消息
 - `CommunityApi`: 帖子/评论/点赞
@@ -187,7 +187,7 @@ import { LlmSessionsApi } from './src';
 
 const api = new LlmSessionsApi();
 const resp = await api.createSession({ userId: 1, dialogueId: undefined });
-// resp.sessionId, resp.prompt, resp.clientIp, resp.location, resp.userProfile, resp.timeoutSeconds
+// resp.userProfile 为 UserProfileDto，其中 JSON 字段为 string[]
 ```
 
 - getSessionStatus(sessionId: string) -> SessionStatusResponse
@@ -212,7 +212,28 @@ const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion:
   - POST /api/llm/sessions/{sessionId}/close
   - 后端当前返回 { sessionId, saved, message }
 
+## 变更日志（前端 SDK）
+
+### 0.3.0
+
+- Breaking: `ProfilesApi.get` 与 `ProfilesApi.save` 的类型对齐后端 DTO：
+  - 响应类型改为 `UserProfileDto`（`interests` 等 JSON 字段为 `string[]`）。
+  - `save` 入参新增 `UserProfileSave`，允许传 `string[]` 或 JSON 字符串；
+    SDK 会自动将数组序列化为 JSON 字符串以兼容服务端实体入参（字符串字段）。
+- `SessionCreateResponse.userProfile` 从 `Record<string, unknown>` 调整为 `UserProfileDto`。
+
+迁移指引：
+
+- 原先直接读取 `resp.userProfile.interests` 作为字符串的代码需改为数组处理。
+- 保存画像时，推荐传 `string[]`，SDK 会自动转换，无需手动 JSON.stringify。
+
+---
+
 错误处理说明
 
-- SDK 的 `httpClient` 会对非 2xx 响应抛出 `ApiError`，包含 `status`, `code`, `message`, `details` 字段。
-- 注意：目前后端在一些错误路径返回的是带有 HTTP 状态码但空 body 的响应（例如 404 + null body）。如果希望客户端从响应体读取 `detail` 字段，请在后端实现统一异常映射（`@ControllerAdvice`）以返回标准错误 JSON；或者我可以在 SDK 层做更宽容的解析以兼容现有行为。
+- SDK 的 `httpClient` 会对非 2xx 响应抛出 `ApiError`，包含
+  `status`, `code`, `message`, `details` 字段。
+- 注意：部分错误路径当前仅返回 HTTP 状态码与空 body
+  （如 404 + null）。如需标准错误 JSON（含 detail/code），
+  可在后端添加 `@ControllerAdvice` 统一异常处理；或在
+  SDK 层扩展宽容解析策略。

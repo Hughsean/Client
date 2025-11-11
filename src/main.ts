@@ -2,6 +2,8 @@ import { createApp } from "vue";
 import App from "./App.vue";
 // Element Plus 全量引入（简单直接）
 import "element-plus/dist/index.css";
+// 全局样式：放大基础字体和 Element Plus 基础字号
+import "./assets/styles/global.css";
 import { updateApiConfig } from "./server";
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 

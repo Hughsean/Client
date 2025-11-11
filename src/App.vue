@@ -4,7 +4,9 @@ import UsersView from './views/UsersView.vue'
 
 <template>
 	<div id="app">
-		<UsersView />
+		<el-config-provider size="large">
+			<UsersView />
+		</el-config-provider>
 	</div>
 </template>
 

@@ -12,7 +12,8 @@ export interface SessionCreateResponse {
   prompt?: string | null;
   clientIp?: string | null;
   location?: Record<string, unknown> | null;
-  userProfile?: Record<string, unknown> | null;
+  // 画像对象改为与后端 DTO 对齐
+  userProfile?: import('./profile').UserProfileDto | null;
   timeoutSeconds?: number;
   dialogueId?: number | null;
 }

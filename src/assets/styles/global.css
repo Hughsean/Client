@@ -1,0 +1,20 @@
+:root {
+  /* 放大 Element Plus 全局基础字号（默认 14px） */
+  --el-font-size-base: 18px;
+}
+
+html {
+  font-size: 20px;
+}
+
+body {
+  font-size: 20px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 让表格、表单等也更舒适一些 */
+.el-table, .el-form, .el-card, .el-descriptions {
+  font-size: var(--el-font-size-base);
+}

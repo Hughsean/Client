@@ -64,7 +64,7 @@ onMounted(fetchUsers);
       :row-class-name="rowClassName"
     >
       <el-table-column type="index" width="60" label="#" />
-      <el-table-column prop="id" label="ID" width="90" sortable />
+      <!-- <el-table-column prop="id" label="ID" width="90" sortable /> -->
       <el-table-column
         prop="username"
         label="用户名"
