@@ -3,6 +3,8 @@ name: Build Tauri App
 on:
   push:
     branches: [ main, Main ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main, Main ]
   workflow_dispatch:
@@ -15,8 +17,6 @@ jobs:
         include:
           - platform: 'macos-latest'
             args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
           - platform: 'windows-latest'
@@ -56,6 +56,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tagName: ${{ github.ref_name }}
+          releaseName: '版本 ${{ github.ref_name }}'
+          releaseBody: |
+            ## 🎉 更新内容
+            
+            ### 📦 下载
+            请根据您的操作系统下载对应的安装包：
+            - **macOS (Apple Silicon)**: `.dmg` 文件
+            - **Windows**: `.msi` 或 `.exe` 文件  
+            - **Linux**: `.AppImage` 或 `.deb` 文件
+            
+            ### 📥 安装说明
+            1. 下载适合您平台的安装包
+            2. 运行安装程序并按照提示操作
+            3. 开始使用！
+            
+            ---
+            **完整更新日志**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.ref_name }}
+          releaseDraft: false
+          prerelease: false
           args: ${{ matrix.args }}
 
       - name: Upload artifacts
