@@ -341,21 +341,21 @@ async function onSave() {
 .profile-table :deep(.el-textarea__inner) {
   font-size: 18px;
 }
-/* 多彩主题颜色（柔和背景 + 渐变标题条） */
+/* 统一为薄荷绿主题（各小模块使用同一主色的不同深浅） */
 .section-interests {
-  --sec-color: #ff9f43;
+  --sec-color: var(--accent-600);
 }
 .section-traits {
-  --sec-color: #6366f1;
+  --sec-color: var(--accent-400);
 }
 .section-preferences {
-  --sec-color: #10b981;
+  --sec-color: var(--accent-600);
 }
 .section-emotions {
-  --sec-color: #ec4899;
+  --sec-color: #2dd4bf; /* mint-variant */
 }
 .section-learnings {
-  --sec-color: #0ea5e9;
+  --sec-color: var(--accent-200);
 }
 
 .section-interests .section-bar h3 {
@@ -380,66 +380,66 @@ async function onSave() {
   overflow: hidden;
 }
 .profile-table--interests :deep(.el-table__inner-wrapper) {
-  border-top: 3px solid #ff9f4333;
+  border-top: 3px solid rgba(16,185,129,0.2);
 }
 .profile-table--traits :deep(.el-table__inner-wrapper) {
-  border-top: 3px solid #6366f133;
+  border-top: 3px solid rgba(52,211,153,0.15);
 }
 .profile-table--preferences :deep(.el-table__inner-wrapper) {
-  border-top: 3px solid #10b98133;
+  border-top: 3px solid rgba(16,185,129,0.18);
 }
 .profile-table--emotions :deep(.el-table__inner-wrapper) {
-  border-top: 3px solid #ec489933;
+  border-top: 3px solid rgba(45,212,191,0.15);
 }
 .profile-table--learnings :deep(.el-table__inner-wrapper) {
-  border-top: 3px solid #0ea5e933;
+  border-top: 3px solid rgba(187,247,228,0.18);
 }
 
 .profile-table--interests :deep(.el-table__body tr:hover > td) {
-  background: #fff6ed !important;
+  background: rgba(136,246,220,0.45) !important;
 }
 .profile-table--traits :deep(.el-table__body tr:hover > td) {
-  background: #f5f5ff !important;
+  background: rgba(136,246,220,0.28) !important;
 }
 .profile-table--preferences :deep(.el-table__body tr:hover > td) {
-  background: #eefcf4 !important;
+  background: rgba(187,247,228,0.45) !important;
 }
 .profile-table--emotions :deep(.el-table__body tr:hover > td) {
-  background: #fff1f7 !important;
+  background: rgba(187,247,228,0.36) !important;
 }
 .profile-table--learnings :deep(.el-table__body tr:hover > td) {
-  background: #eefaff !important;
+  background: rgba(219,255,246,0.45) !important;
 }
 
 /* 输入框获得焦点时加主题色描边 */
 .profile-table--interests :deep(.is-focus) {
-  box-shadow: 0 0 0 1px #ff9f43 inset;
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.18) inset;
 }
 .profile-table--traits :deep(.is-focus) {
-  box-shadow: 0 0 0 1px #6366f1 inset;
+  box-shadow: 0 0 0 2px rgba(52,211,153,0.14) inset;
 }
 .profile-table--preferences :deep(.is-focus) {
-  box-shadow: 0 0 0 1px #10b981 inset;
+  box-shadow: 0 0 0 2px rgba(16,185,129,0.18) inset;
 }
 .profile-table--emotions :deep(.is-focus) {
-  box-shadow: 0 0 0 1px #ec4899 inset;
+  box-shadow: 0 0 0 2px rgba(45,212,191,0.16) inset;
 }
 .profile-table--learnings :deep(.is-focus) {
-  box-shadow: 0 0 0 1px #0ea5e9 inset;
+  box-shadow: 0 0 0 2px rgba(187,247,228,0.16) inset;
 }
 
 /* 删除按钮用对应主题的更柔和色 */
 .profile-table--interests :deep(.el-button--danger) {
-  color: #ff7f2a;
+  color: #f97316;
 }
 .profile-table--traits :deep(.el-button--danger) {
-  color: #4f46e5;
+  color: #ef4444;
 }
 .profile-table--preferences :deep(.el-button--danger) {
   color: #059669;
 }
 .profile-table--emotions :deep(.el-button--danger) {
-  color: #db2777;
+  color: #ef4444;
 }
 .profile-table--learnings :deep(.el-button--danger) {
   color: #0284c7;

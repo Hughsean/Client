@@ -11,7 +11,7 @@ import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 // 浏览器开发环境走 Vite 代理（/api -> http://localhost:8080），避免 CORS。
 
 updateApiConfig({
-    baseURL: 'http://127.0.0.1:8080',
+    baseURL: 'http://10.13.19.91:8080',
     timeoutMs: 10000,
     customFetch: tauriFetch
 });
