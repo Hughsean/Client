@@ -96,17 +96,17 @@ async function onSave() {
     size="50%"
     @close="closeDrawer"
   >
-    <div>
-      <div>
-        <div>
-          <span>👤</span>
-          <span>{{
+    <div class="user-details">
+      <div class="user-details__header">
+        <div class="header-title">
+          <span class="header-icon">👤</span>
+          <span class="header-text">{{
             props.user?.nickname ||
             props.user?.username ||
             "用户 #" + props.userId
           }}</span>
         </div>
-        <div>
+        <div class="header-actions">
           <UiButton @click="closeDrawer">关闭</UiButton>
           <UiButton
             type="primary"
@@ -120,20 +120,20 @@ async function onSave() {
       <UiSkeleton :loading="loading" :rows="6">
         <template #default>
           <!-- 兴趣 -->
-          <section>
-            <div>
-              <h3>兴趣</h3>
-              <UiButton type="primary" @click="addItem(interests)"
-                >新增一项</UiButton
+          <section class="profile-section">
+            <div class="section-header">
+              <h3 class="section-title">💡 兴趣爱好</h3>
+              <UiButton type="primary" size="small" @click="addItem(interests)"
+                >+ 新增</UiButton
               >
             </div>
-            <div>
-              <table>
+            <div class="section-content">
+              <table class="profile-table">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th width="60">#</th>
                     <th>内容</th>
-                    <th>操作</th>
+                    <th width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -142,11 +142,12 @@ async function onSave() {
                     <td>
                       <input
                         v-model="interests[idx]"
+                        class="profile-input"
                         placeholder="输入兴趣条目"
                       />
                     </td>
                     <td>
-                      <UiButton type="" @click="removeItem(interests, idx)"
+                      <UiButton size="small" @click="removeItem(interests, idx)"
                         >删除</UiButton
                       >
                     </td>
@@ -157,20 +158,20 @@ async function onSave() {
           </section>
 
           <!-- 性格特征 -->
-          <section>
-            <div>
-              <h3>性格特征</h3>
-              <UiButton type="primary" @click="addItem(traits)"
-                >新增一项</UiButton
+          <section class="profile-section">
+            <div class="section-header">
+              <h3 class="section-title">🎭 性格特征</h3>
+              <UiButton type="primary" size="small" @click="addItem(traits)"
+                >+ 新增</UiButton
               >
             </div>
-            <div>
-              <table>
+            <div class="section-content">
+              <table class="profile-table">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th width="60">#</th>
                     <th>内容</th>
-                    <th>操作</th>
+                    <th width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -179,11 +180,12 @@ async function onSave() {
                     <td>
                       <input
                         v-model="traits[idx]"
+                        class="profile-input"
                         placeholder="输入特征"
                       />
                     </td>
                     <td>
-                      <UiButton @click="removeItem(traits, idx)">删除</UiButton>
+                      <UiButton size="small" @click="removeItem(traits, idx)">删除</UiButton>
                     </td>
                   </tr>
                 </tbody>
@@ -192,20 +194,20 @@ async function onSave() {
           </section>
 
           <!-- 互动偏好 -->
-          <section>
-            <div>
-              <h3>互动偏好</h3>
-              <UiButton type="primary" @click="addItem(preferences)"
-                >新增一项</UiButton
+          <section class="profile-section">
+            <div class="section-header">
+              <h3 class="section-title">💬 互动偏好</h3>
+              <UiButton type="primary" size="small" @click="addItem(preferences)"
+                >+ 新增</UiButton
               >
             </div>
-            <div>
-              <table>
+            <div class="section-content">
+              <table class="profile-table">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th width="60">#</th>
                     <th>内容</th>
-                    <th>操作</th>
+                    <th width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -214,11 +216,12 @@ async function onSave() {
                     <td>
                       <input
                         v-model="preferences[idx]"
+                        class="profile-input"
                         placeholder="输入偏好"
                       />
                     </td>
                     <td>
-                      <UiButton @click="removeItem(preferences, idx)"
+                      <UiButton size="small" @click="removeItem(preferences, idx)"
                         >删除</UiButton
                       >
                     </td>
@@ -229,20 +232,20 @@ async function onSave() {
           </section>
 
           <!-- 情绪倾向 -->
-          <section>
-            <div>
-              <h3>情绪倾向</h3>
-              <UiButton type="primary" @click="addItem(emotions)"
-                >新增一项</UiButton
+          <section class="profile-section">
+            <div class="section-header">
+              <h3 class="section-title">😊 情绪倾向</h3>
+              <UiButton type="primary" size="small" @click="addItem(emotions)"
+                >+ 新增</UiButton
               >
             </div>
-            <div>
-              <table>
+            <div class="section-content">
+              <table class="profile-table">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th width="60">#</th>
                     <th>内容</th>
-                    <th>操作</th>
+                    <th width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -251,11 +254,12 @@ async function onSave() {
                     <td>
                       <input
                         v-model="emotions[idx]"
+                        class="profile-input"
                         placeholder="输入情绪倾向"
                       />
                     </td>
                     <td>
-                      <UiButton @click="removeItem(emotions, idx)"
+                      <UiButton size="small" @click="removeItem(emotions, idx)"
                         >删除</UiButton
                       >
                     </td>
@@ -266,18 +270,17 @@ async function onSave() {
           </section>
 
           <!-- 学习记录 -->
-          <section>
-            <div>
-              <h3>学习记录</h3>
-              <!-- <el-button link type="primary" @click="addItem(learnings)">新增一项</el-button> -->
+          <section class="profile-section">
+            <div class="section-header">
+              <h3 class="section-title">📚 学习记录</h3>
             </div>
-            <div>
-              <table>
+            <div class="section-content">
+              <table class="profile-table">
                 <thead>
                   <tr>
-                    <th>#</th>
+                    <th width="60">#</th>
                     <th>内容</th>
-                    <th>操作</th>
+                    <th width="100">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -286,11 +289,12 @@ async function onSave() {
                     <td>
                       <input
                         v-model="learnings[idx]"
+                        class="profile-input"
                         placeholder="输入学习记录"
                       />
                     </td>
                     <td>
-                      <UiButton @click="removeItem(learnings, idx)"
+                      <UiButton size="small" @click="removeItem(learnings, idx)"
                         >删除</UiButton
                       >
                     </td>
@@ -304,5 +308,166 @@ async function onSave() {
     </div>
   </UiDrawer>
 </template>
+
+<style scoped>
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.user-details__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: rgba(22, 27, 34, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.header-icon {
+  font-size: var(--font-size-3xl);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #64ffda 0%, #ffc131 100%);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px var(--primary-cyan-glow);
+  border: 2px solid rgba(100, 255, 218, 0.3);
+}
+
+.header-text {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.header-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.profile-section {
+  background: rgba(28, 33, 40, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.section-content {
+  overflow-x: auto;
+}
+
+.profile-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: rgba(22, 27, 34, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.profile-table thead {
+  background: rgba(28, 33, 40, 0.6);
+}
+
+.profile-table th {
+  padding: var(--spacing-md);
+  font-weight: 600;
+  text-align: left;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+.profile-table tbody tr:hover {
+  background: var(--surface-hover);
+}
+
+.profile-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.profile-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.profile-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+  outline: none;
+}
+
+.profile-input:focus {
+  border-color: var(--primary-cyan);
+  background: var(--bg-dark-3);
+  box-shadow: 0 0 0 3px var(--primary-cyan-glow);
+}
+
+.profile-input::placeholder {
+  color: var(--text-muted);
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+</style>
 
 

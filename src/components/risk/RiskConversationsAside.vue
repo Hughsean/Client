@@ -19,14 +19,13 @@ import {
   polarityCN,
 } from "../../utils/risk";
 import RiskMessageList from "./RiskMessageList.vue";
-import RiskFloatCard from "./RiskFloatCard.vue";
 import UiSkeleton from '../ui/UiSkeleton.vue'
 import UiEmpty from '../ui/UiEmpty.vue'
 import UiTag from '../ui/UiTag.vue'
 import UiTooltip from '../ui/UiTooltip.vue'
 import { formatToCN } from "../../utils/time";
 
-const props = defineProps<{ userId: number | null; user: User | null }>();
+const props = defineProps<{ userId: number | null; user?: User | null }>();
 
 const adminApi = new AdminApi();
 const convApi = new ConversationsApi();
@@ -34,11 +33,6 @@ const loading = ref(false);
 const convos = ref<AdminRiskConversation[]>([]);
 const selectedConvId = ref<number | null>(null);
 const selectedMessageId = ref<number | undefined>(undefined);
-const floatCard = ref<{
-  visible: boolean;
-  convId?: number;
-  messageId?: number;
-}>({ visible: false });
 
 const title = computed(
   () =>
@@ -127,7 +121,6 @@ function selectConversation(id: number) {
   selectedConvId.value = id;
   selectedMessageId.value = undefined;
   loadMessages(id);
-  floatCard.value.visible = false;
 }
 
 async function loadMessages(convId: number) {
@@ -196,10 +189,6 @@ function pickInitialMessage(conv: AdminRiskConversation) {
   selectedMessageId.value = fallback?.id;
 }
 
-function getCurrentConversation(): AdminRiskConversation | undefined {
-  return convos.value.find((c) => c.conversationId === selectedConvId.value);
-}
-
 function getVisibleMessages(conv?: AdminRiskConversation) {
   if (!conv) return [];
   return (conv.messages || []).filter((m) =>
@@ -210,7 +199,7 @@ function getVisibleMessages(conv?: AdminRiskConversation) {
 function getDetectionsForMessage(
   conv: AdminRiskConversation,
   messageId?: number
-) {
+): AdminRiskMessageDetection[] {
   const list = conv?.detections || [];
   if (!messageId) return list;
   return list.filter((d) => Number(d.messageId) === Number(messageId));
@@ -225,37 +214,8 @@ function getFirstDetectionOrNone(
   return { messageId, riskLevel: "NONE" } as AdminRiskMessageDetection;
 }
 
-function openDetectionCard(convId: number, messageId?: number) {
-  floatCard.value = { visible: true, convId, messageId };
-}
-function closeDetectionCard() {
-  floatCard.value.visible = false;
-}
-
 function onSelectMessage(mid: number) {
   selectedMessageId.value = mid;
-  const conv = getCurrentConversation();
-  const msg = conv?.messages.find((m) => Number(m.id) === Number(mid));
-  if (!msg || String(msg.role).toLowerCase() !== "user") closeDetectionCard();
-}
-
-function getDetectionsForCard(): AdminRiskMessageDetection[] {
-  const conv = getCurrentConversation();
-  if (!conv) return [];
-  const list = (conv.detections || []).filter(
-    (d) =>
-      !floatCard.value.messageId ||
-      Number(d.messageId) === Number(floatCard.value.messageId)
-  );
-  if (list.length) return list;
-  if (floatCard.value.messageId)
-    return [
-      {
-        messageId: floatCard.value.messageId,
-        riskLevel: "NONE",
-      } as AdminRiskMessageDetection,
-    ];
-  return [];
 }
 
 function riskItemStyle(level?: RiskLevel) {
@@ -321,7 +281,6 @@ function riskItemStyle(level?: RiskLevel) {
           :selected-message-id="selectedMessageId"
           :max-height="'none'"
           @select="onSelectMessage"
-          @open-card="(mid:number)=> currentConv && openDetectionCard(currentConv.conversationId, mid)"
         >
           <template #indicator="{ message }">
             <template v-if="String(message.role).toLowerCase() === 'user'">
@@ -414,108 +373,140 @@ function riskItemStyle(level?: RiskLevel) {
         <UiEmpty v-else description="未选中会话" />
       </div>
     </main>
-
-    <RiskFloatCard
-      :visible="floatCard.visible"
-      :conversation-id="floatCard.convId"
-      :message-id="floatCard.messageId"
-      :detections="getDetectionsForCard()"
-      @close="closeDetectionCard"
-    />
   </div>
 </template>
 
 <style scoped>
 .risk-aside-layout {
   display: flex;
-  height: calc(100vh - 140px);
+  height: 100%;
+  width: 100%;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  font-size: 14px;
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
+  background: rgba(22, 27, 34, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn 0.4s ease-out;
 }
 
 .aside {
-  width: 310px;
-  border-right: 1px solid var(--border-subtle);
-  background: linear-gradient(135deg, rgba(109, 40, 217, 0.03), rgba(6, 182, 212, 0.03));
+  width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: rgba(28, 33, 40, 0.5);
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden;
 }
 
 .aside-title {
   margin: 0;
-  padding: 16px 16px 12px;
-  font-size: 16px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-base);
   font-weight: 700;
-  color: var(--text-on-bg);
+  color: var(--text-primary);
   letter-spacing: -0.3px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 2px solid var(--border);
+  background: rgba(100, 255, 218, 0.05);
+  flex-shrink: 0;
+  height: 50px;
+  display: flex;
+  align-items: center;
 }
 
 .conv-list {
   list-style: none;
   margin: 0;
-  padding: 10px;
-  overflow: auto;
+  padding: var(--spacing-sm);
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--spacing-xs);
+  flex: 1;
 }
 
 .conv-list .risk-item {
-  padding: 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  font-size: 13px;
-  background: var(--surface-2);
+  gap: var(--spacing-xs);
+  transition: all var(--transition-base);
+  background: rgba(22, 27, 34, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.conv-list .risk-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-cyan);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  box-shadow: 0 0 10px var(--primary-cyan-glow);
 }
 
 .conv-list .risk-item:hover {
-  border-color: var(--accent);
-  background: var(--surface-3);
-  box-shadow: 0 0 12px rgba(100, 255, 218, 0.1);
+  border-color: var(--primary-cyan);
+  background: var(--surface-1);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px var(--primary-cyan-glow);
+}
+
+.conv-list .risk-item:hover::before {
+  opacity: 1;
 }
 
 .conv-list .risk-item.active {
-  border-color: var(--accent);
-  background: rgba(100, 255, 218, 0.1);
-  box-shadow: inset 0 0 12px rgba(100, 255, 218, 0.08);
+  border-color: var(--primary-cyan);
+  background: rgba(36, 200, 219, 0.1);
+  box-shadow: 0 4px 16px var(--primary-cyan-glow);
+  transform: translateX(8px);
+}
+
+.conv-list .risk-item.active::before {
+  opacity: 1;
 }
 
 .conv-list .line-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .conv-list .cid-title {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
   flex: 1;
 }
 
 .conv-list .cid {
   font-weight: 700;
-  color: var(--accent);
-  font-size: 11px;
+  color: var(--primary-cyan);
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
 }
 
 .conv-list .title {
-  font-size: 13px;
-  color: var(--text-on-bg);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -526,42 +517,49 @@ function riskItemStyle(level?: RiskLevel) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px 20px;
+  padding: var(--spacing-md);
   overflow: hidden;
-  font-size: 14px;
-  background: linear-gradient(135deg, rgba(109, 40, 217, 0.02), rgba(6, 182, 212, 0.02));
+  background: rgba(22, 27, 34, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .main-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  gap: var(--spacing-md);
+  border-bottom: 2px solid var(--border);
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  flex-shrink: 0;
+  height: 50px;
 }
 
 .conv-title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: 700;
-  color: var(--text-on-bg);
+  color: var(--text-primary);
   letter-spacing: -0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .conv-title small {
-  font-size: 13px;
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
   font-weight: 500;
-  margin-left: 4px;
+  margin-left: var(--spacing-xs);
 }
 
 .meta {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 13px;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  flex-shrink: 0;
 }
 
 .meta .time {
@@ -571,24 +569,26 @@ function riskItemStyle(level?: RiskLevel) {
 
 .messages-block {
   flex: 1;
-  overflow: auto;
-  padding-right: 6px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: var(--surface-2);
-  padding: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(28, 33, 40, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: var(--spacing-sm);
 }
 
 .tt {
   display: grid;
   grid-template-columns: 80px 1fr;
-  gap: 6px 10px;
+  gap: var(--spacing-xs) var(--spacing-md);
   max-width: 380px;
-  font-size: 12px;
+  font-size: var(--font-size-sm);
 }
 
 .tt label {
-  color: var(--accent);
+  color: var(--primary-cyan);
   font-weight: 600;
 }
 
@@ -600,28 +600,17 @@ function riskItemStyle(level?: RiskLevel) {
   color: var(--text-tertiary);
   font-style: normal;
   grid-column: 1 / -1;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
 }
 
-/* 滚动条美化 */
-.conv-list::-webkit-scrollbar,
-.messages-block::-webkit-scrollbar {
-  width: 6px;
-}
-
-.conv-list::-webkit-scrollbar-track,
-.messages-block::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.conv-list::-webkit-scrollbar-thumb,
-.messages-block::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 255, 218, 0.2);
-  border-radius: 3px;
-}
-
-.conv-list::-webkit-scrollbar-thumb:hover,
-.messages-block::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(100, 255, 218, 0.4);
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

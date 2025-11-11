@@ -54,44 +54,70 @@ function isActive(id?: number) {
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--spacing-xs);
 }
 
 .msg-list li {
   display: grid;
-  grid-template-columns: 76px 1fr 220px;
-  gap: 12px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border-subtle);
+  grid-template-columns: 80px 1fr 220px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border);
   cursor: pointer;
-  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 6px;
-  margin: 2px 0;
+  transition: all var(--transition-base);
+  border-radius: var(--radius-md);
+  background: rgba(22, 27, 34, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  position: relative;
+  overflow: hidden;
+}
+
+.msg-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary-cyan);
+  opacity: 0;
+  transition: opacity var(--transition-base);
 }
 
 .msg-list li:hover {
-  background: rgba(100, 255, 218, 0.08);
-  border-color: var(--accent);
+  background: var(--surface-hover);
+  border-color: var(--primary-cyan);
+  transform: translateX(4px);
+}
+
+.msg-list li:hover::before {
+  opacity: 1;
 }
 
 .msg-list li.active {
-  background: rgba(100, 255, 218, 0.15);
-  border-color: var(--accent);
-  box-shadow: inset 0 0 12px rgba(100, 255, 218, 0.1);
+  background: rgba(36, 200, 219, 0.1);
+  border-color: var(--primary-cyan);
+  box-shadow: 0 0 12px var(--primary-cyan-glow);
+}
+
+.msg-list li.active::before {
+  opacity: 1;
+  box-shadow: 0 0 8px var(--primary-cyan-glow);
 }
 
 .msg-list .role {
-  color: var(--accent);
-  font-weight: 600;
-  font-size: 12px;
+  color: var(--primary-cyan);
+  font-weight: 700;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
 }
 
 .msg-list .text {
-  color: var(--text-on-bg);
-  font-size: 13px;
-  line-height: 1.4;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -100,33 +126,15 @@ function isActive(id?: number) {
 .msg-list .right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   justify-content: flex-end;
 }
 
 .msg-list .time {
   color: var(--text-tertiary);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   min-width: 140px;
   text-align: right;
   white-space: nowrap;
-}
-
-/* 滚动条美化 */
-.msg-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.msg-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.msg-list::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 255, 218, 0.2);
-  border-radius: 3px;
-}
-
-.msg-list::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(100, 255, 218, 0.4);
 }
 </style>

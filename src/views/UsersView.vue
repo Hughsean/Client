@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import UserList from "../components/UserList.vue";
 import UserDetails from "../components/UserDetails.vue";
-import RiskMonitoringView from "./RiskMonitoringView.vue";
-import UiDialog from "../components/ui/UiDialog.vue";
+import UsersIslandContent from "../components/navbar/UsersIslandContent.vue";
+import { useNavbarIsland } from "../composables/useNavbarIsland";
 import type { User } from "../server";
 
 const selectedUser = ref<User | null>(null);
 const selectedId = ref<number | null>(null);
 const drawerVisible = ref(false);
-const riskViewVisible = ref(false); // 新的全屏视图模式
+const userListRef = ref<InstanceType<typeof UserList>>();
+
+const { setIslandContent, clearIslandContent } = useNavbarIsland();
 
 function handleSelect(u: User) {
   selectedUser.value = u;
@@ -17,17 +19,29 @@ function handleSelect(u: User) {
   drawerVisible.value = true;
 }
 
-function handleViewRisk(u: User) {
-  selectedUser.value = u;
-  selectedId.value = (u.id as number) ?? null;
-  // 打开新的风险监测视图（全屏对话框）
-  riskViewVisible.value = true;
+function handleRefresh() {
+  userListRef.value?.refresh();
 }
+
+// 设置灵动岛内容
+onMounted(() => {
+  setIslandContent({
+    component: UsersIslandContent,
+    props: {
+      onRefresh: handleRefresh
+    }
+  });
+});
+
+// 清理灵动岛内容
+onUnmounted(() => {
+  clearIslandContent();
+});
 </script>
 
 <template>
   <div>
-    <UserList @select="handleSelect" @view-risk="handleViewRisk" />
+    <UserList ref="userListRef" @select="handleSelect" />
     <UserDetails
       :user="selectedUser"
       :user-id="selectedId"
@@ -35,19 +49,5 @@ function handleViewRisk(u: User) {
       @close="drawerVisible = false"
       @saved="() => {}"
     />
-    <!-- 旧的风险对话弹窗入口已移除（组件不存在） -->
-
-    <!-- 新：风险监测视图，全屏对话框承载 -->
-    <UiDialog
-      v-model="riskViewVisible"
-      :fullscreen="true"
-      @close="riskViewVisible = false"
-    >
-      <RiskMonitoringView
-        :user="selectedUser"
-        :user-id="selectedId"
-        @back="riskViewVisible = false"
-      />
-    </UiDialog>
   </div>
 </template>
