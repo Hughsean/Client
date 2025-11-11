@@ -1,17 +1,18 @@
 <script setup lang="ts">
-// 根组件：挂载 UsersList 用于查看用户
-import UsersList from './components/UsersList.vue';
+import UsersView from './views/UsersView.vue'
 </script>
 
 <template>
 	<div id="app">
-		<UsersList />
+		<UsersView />
 	</div>
 </template>
 
 <style scoped>
 #app {
-	font-family: Avenir, Helvetica, Arial, sans-serif;
+	font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
 	color: #2c3e50;
+	background: #f5f7fa;
+	min-height: 100vh;
 }
 </style>

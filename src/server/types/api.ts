@@ -4,7 +4,6 @@ export interface ApiResponse<T> {
   success?: boolean;
   data?: T | null;
   message?: string;
-  code?: string | number;
   // 其他后端可能附带的字段
   [key: string]: unknown;
 }

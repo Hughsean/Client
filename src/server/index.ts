@@ -16,6 +16,7 @@ export * from './types/session';
 export * from './types/community';
 export * from './types/conversation';
 export * from './types/depression';
+export * from './types/admin';
 
 // API 模块导出
 export { UsersApi } from './apis/UsersApi';
