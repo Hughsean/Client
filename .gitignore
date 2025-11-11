@@ -27,3 +27,5 @@ pnpm-lock.yaml
 **/Cargo.lock
 auto-imports.d.ts
 components.d.ts
+
+target
