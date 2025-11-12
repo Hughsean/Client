@@ -2,11 +2,8 @@ name: Build Tauri App
 
 on:
   push:
-    branches: [ main, Main ]
     tags:
       - 'v*'
-  pull_request:
-    branches: [ main, Main ]
   workflow_dispatch:
 
 permissions:
@@ -55,7 +52,7 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
-      - name: Build Tauri app (without release)
+      - name: Build Tauri app (with release on tags)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
