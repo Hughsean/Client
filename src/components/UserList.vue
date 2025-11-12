@@ -2,9 +2,9 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { messageError } from "../utils/message";
-import UiCard from "./ui/UiCard.vue";
-import UiButton from "./ui/UiButton.vue";
-import UiTag from "./ui/UiTag.vue";
+import UiCard from "@/ui/UiCard.vue";
+import UiButton from "@/ui/UiButton.vue";
+import UiTag from "@/ui/UiTag.vue";
 import { UsersApi, AdminApi } from "../server";
 import type { User, RiskLevel } from "../server";
 import { riskLevelCN } from "../utils/risk";

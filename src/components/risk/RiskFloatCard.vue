@@ -6,7 +6,7 @@ import {
   onMounted,
   onBeforeUnmount,
 } from "vue";
-import UiEmpty from '../ui/UiEmpty.vue'
+import UiEmpty from '@/ui/UiEmpty.vue'
 import { formatToCN } from "../../utils/time";
 import {
   tagStyle,

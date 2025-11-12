@@ -19,10 +19,10 @@ import {
   polarityCN,
 } from "../../utils/risk";
 import RiskMessageList from "./RiskMessageList.vue";
-import UiSkeleton from '../ui/UiSkeleton.vue'
-import UiEmpty from '../ui/UiEmpty.vue'
-import UiTag from '../ui/UiTag.vue'
-import UiTooltip from '../ui/UiTooltip.vue'
+import UiSkeleton from '@/ui/UiSkeleton.vue'
+import UiEmpty from '@/ui/UiEmpty.vue'
+import UiTag from '@/ui/UiTag.vue'
+import UiTooltip from '@/ui/UiTooltip.vue'
 import { formatToCN } from "../../utils/time";
 
 const props = defineProps<{ userId: number | null; user?: User | null }>();

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { messageError, messageInfo } from "../utils/message";
-import UiDrawer from "./ui/UiDrawer.vue";
-import UiSkeleton from "./ui/UiSkeleton.vue";
-import UiButton from "./ui/UiButton.vue";
+import UiDrawer from "@/ui/UiDrawer.vue";
+import UiSkeleton from "@/ui/UiSkeleton.vue";
+import UiButton from "@/ui/UiButton.vue";
 import { ProfilesApi } from "../server";
 import type { User, UserProfileDto, UserProfileSave } from "../server";
 
@@ -146,7 +146,7 @@ async function onSave() {
 <template>
   <UiDrawer
     v-model="localVisible"
-    :with-header="false"
+    :with-header="true"
     size="50%"
     @close="closeDrawer"
   >
@@ -167,6 +167,11 @@ async function onSave() {
               :disabled="!userId"
               @click="startEditing"
               >编辑</UiButton
+            >
+            <UiButton
+              type="danger"
+              @click="closeDrawer"
+              >关闭</UiButton
             >
           </template>
           <template v-else>
