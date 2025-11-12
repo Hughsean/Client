@@ -50,27 +50,28 @@ function isActive(id?: number) {
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 240px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
+  flex: 1;
+  min-height: 0;
 }
 
 .msg-list li {
   display: grid;
-  grid-template-columns: 80px 1fr 220px;
+  grid-template-columns: 70px 1fr auto;
   gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  border: 1px solid var(--border);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   cursor: pointer;
-  transition: all var(--transition-base);
-  border-radius: var(--radius-md);
-  background: rgba(22, 27, 34, 0.4);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-lg);
+  background: rgba(28, 33, 40, 0.5);
   position: relative;
   overflow: hidden;
+  align-items: start;
 }
 
 .msg-list li::before {
@@ -82,23 +83,23 @@ function isActive(id?: number) {
   width: 3px;
   background: var(--primary-cyan);
   opacity: 0;
-  transition: opacity var(--transition-base);
+  transition: opacity 0.25s ease;
 }
 
 .msg-list li:hover {
-  background: var(--surface-hover);
-  border-color: var(--primary-cyan);
-  transform: translateX(4px);
+  background: rgba(36, 41, 50, 0.7);
+  border-color: rgba(100, 255, 218, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .msg-list li:hover::before {
-  opacity: 1;
+  opacity: 0.6;
 }
 
 .msg-list li.active {
-  background: rgba(36, 200, 219, 0.1);
+  background: rgba(36, 200, 219, 0.08);
   border-color: var(--primary-cyan);
-  box-shadow: 0 0 12px var(--primary-cyan-glow);
+  box-shadow: 0 0 0 1px var(--primary-cyan), 0 4px 16px rgba(100, 255, 218, 0.2);
 }
 
 .msg-list li.active::before {
@@ -108,33 +109,41 @@ function isActive(id?: number) {
 
 .msg-list .role {
   color: var(--primary-cyan);
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--font-size-xs);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+  white-space: nowrap;
+  padding-top: 2px;
 }
 
 .msg-list .text {
   color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  line-height: 1.5;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  font-weight: 400;
 }
 
 .msg-list .right {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   justify-content: flex-end;
+  flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .msg-list .time {
-  color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
   min-width: 140px;
   text-align: right;
   white-space: nowrap;
+  font-weight: 500;
 }
 </style>

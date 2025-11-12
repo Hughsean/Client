@@ -21,6 +21,8 @@ export interface ApiConfig {
   unwrapHook?: <T>(resp: any) => T;
   // 可注入自定义 fetch（如 @tauri-apps/plugin-http 的 fetch 或 cross-fetch）
   customFetch?: typeof fetch;
+  // 是否以管理员模式运行（true: 使用 Admin API Key, false: 使用 JWT Token）
+  isAdminMode?: boolean;
 }
 
 export const defaultApiConfig: ApiConfig = {
@@ -38,7 +40,8 @@ export const defaultApiConfig: ApiConfig = {
     backoffFactor: 2,
     retryMethods: ['GET', 'PUT', 'DELETE', 'HEAD', 'OPTIONS']
   },
-  autoUnwrap: true
+  autoUnwrap: true,
+  isAdminMode: false // 默认使用普通用户模式
 };
 
 // 允许动态覆盖配置
@@ -59,4 +62,13 @@ export function setBearerToken(token: string | null) {
 }
 export function getBearerToken() {
   return bearerToken;
+}
+
+// 管理员 API Key 管理
+let adminApiKey: string | null = null;
+export function setAdminApiKey(apiKey: string | null) {
+  adminApiKey = apiKey;
+}
+export function getAdminApiKey() {
+  return adminApiKey;
 }

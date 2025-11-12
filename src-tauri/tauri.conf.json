@@ -16,7 +16,8 @@
         "width": 1400,
         "height": 900,
         "center": true,
-        "visible": false
+        "visible": false,
+        "maximized": true
       }
     ],
     "security": {
@@ -25,7 +26,15 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "app", "msi", "nsis", "deb", "rpm", "appimage"],
+    "targets": [
+      "dmg",
+      "app",
+      "msi",
+      "nsis",
+      "deb",
+      "rpm",
+      "appimage"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

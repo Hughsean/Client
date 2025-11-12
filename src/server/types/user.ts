@@ -3,10 +3,15 @@
 export interface User {
   id?: number;
   username?: string;
+  password?: string;  // 密码字段(注册时需要,查询时不返回)
   nickname?: string;
   email?: string;
   phone?: string;
+  avatar?: string;
   status?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
   // TODO: 根据后端实体补全更多字段
   [key: string]: unknown;
 }
@@ -17,9 +22,8 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token?: string;
-  user?: User;
-  expiresAt?: string; // ISO 时间
-  // TODO: 其他登录返回字段
-  [key: string]: unknown;
+  userId: number;
+  username: string;
+  nickname: string;
+  token: string;
 }

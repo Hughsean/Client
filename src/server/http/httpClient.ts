@@ -1,9 +1,10 @@
 // client/lib/src/http/httpClient.ts
 // 统一 HTTP 客户端封装，支持超时、重试、拦截器、错误归一、响应解包
 
-import { getApiConfig, getBearerToken } from '../config/api.config';
+import { getApiConfig, getBearerToken, getAdminApiKey } from '../config/api.config';
 import type { ApiResponse } from '../types/api';
 import { ApiError } from '../types/api';
+import { rsaEncrypt, getPublicKey } from '../utils/crypto';
 
 // fetch 实现：优先使用配置注入的 customFetch，否则使用全局 fetch
 
@@ -94,8 +95,36 @@ export async function request<T = any>(method: HttpMethod, path: string, options
   let url = cfg.baseURL.replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path) + qs;
 
   const finalHeaders: Record<string, string> = { ...cfg.defaultHeaders, ...headers };
-  const token = getBearerToken();
-  if (token) finalHeaders['Authorization'] = `Bearer ${token}`;
+  
+  // 根据配置决定使用管理员 API Key 还是普通用户 JWT Token
+  if (cfg.isAdminMode) {
+    // 管理员模式：使用 Admin API Key（RSA 加密传输）
+    const adminKey = getAdminApiKey();
+    if (adminKey) {
+      try {
+        // 获取公钥并加密 API Key
+        const publicKey = await getPublicKey();
+        const encryptedKey = await rsaEncrypt(adminKey, publicKey);
+        finalHeaders['X-Admin-API-Key'] = encryptedKey;
+      } catch (error) {
+        console.error('加密管理员 API Key 失败:', error);
+        throw new ApiError({
+          status: 0,
+          code: 'ENCRYPTION_ERROR',
+          message: '管理员 API Key 加密失败',
+          details: { error }
+        });
+      }
+    } else {
+      console.warn('管理员模式已启用，但未设置 Admin API Key');
+    }
+  } else {
+    // 普通用户模式：使用 JWT Token
+    const token = getBearerToken();
+    if (token) {
+      finalHeaders['Authorization'] = `Bearer ${token}`;
+    }
+  }
 
   const init: RequestInit = {
     method,

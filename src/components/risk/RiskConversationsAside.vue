@@ -14,16 +14,12 @@ import type {
 import {
   tagStyle,
   riskLevelCN,
-  intentCN,
-  targetCN,
-  polarityCN,
 } from "../../utils/risk";
 import RiskMessageList from "./RiskMessageList.vue";
+import RiskFloatCard from "./RiskFloatCard.vue";
 import UiSkeleton from '@/ui/UiSkeleton.vue'
 import UiEmpty from '@/ui/UiEmpty.vue'
 import UiTag from '@/ui/UiTag.vue'
-import UiTooltip from '@/ui/UiTooltip.vue'
-import { formatToCN } from "../../utils/time";
 
 const props = defineProps<{ userId: number | null; user?: User | null }>();
 
@@ -33,6 +29,8 @@ const loading = ref(false);
 const convos = ref<AdminRiskConversation[]>([]);
 const selectedConvId = ref<number | null>(null);
 const selectedMessageId = ref<number | undefined>(undefined);
+const showFloatCard = ref(false);
+const floatCardDetections = ref<AdminRiskMessageDetection[]>([]);
 
 const title = computed(
   () =>
@@ -216,14 +214,26 @@ function getFirstDetectionOrNone(
 
 function onSelectMessage(mid: number) {
   selectedMessageId.value = mid;
+  // 打开风险卡片
+  if (currentConv.value) {
+    const dets = getDetectionsForMessage(currentConv.value, mid);
+    if (dets.length || String(currentConv.value.messages?.find(m => m.id === mid)?.role).toLowerCase() === 'user') {
+      floatCardDetections.value = dets.length ? dets : [{ messageId: mid, riskLevel: "NONE" } as AdminRiskMessageDetection];
+      showFloatCard.value = true;
+    }
+  }
+}
+
+function closeFloatCard() {
+  showFloatCard.value = false;
 }
 
 function riskItemStyle(level?: RiskLevel) {
   const score = riskScore(level);
   const hue = 120 - 120 * score; // green -> red
   return {
-    background: `linear-gradient(90deg, hsla(${hue},80%,96%,1) 0%, hsla(${hue},80%,98%,1) 100%)`,
-    borderColor: `hsla(${hue},80%,60%,0.55)`,
+    '--risk-hue': hue.toString(),
+    '--risk-score': score.toString(),
   };
 }
 </script>
@@ -269,8 +279,8 @@ function riskItemStyle(level?: RiskLevel) {
           <small>{{ currentConv?.title || "（无标题）" }}</small>
         </h3>
         <div class="meta">
-          <UiTag :style="tagStyle(currentConv?.aggregatedRiskLevel)">聚合：{{ riskLevelCN(currentConv?.aggregatedRiskLevel) }}</UiTag>
-          <span class="time">{{ formatToCN(currentConv?.createdAt) }}</span>
+          <UiTag :style="tagStyle(currentConv?.aggregatedRiskLevel)">总结：{{ riskLevelCN(currentConv?.aggregatedRiskLevel) }}</UiTag>
+          <!-- <span class="time">{{ formatToCN(currentConv?.createdAt) }}</span> -->
         </div>
       </div>
       <div class="messages-block">
@@ -284,95 +294,32 @@ function riskItemStyle(level?: RiskLevel) {
         >
           <template #indicator="{ message }">
             <template v-if="String(message.role).toLowerCase() === 'user'">
-              <UiTooltip>
-                <template #content>
-                  <div class="tt">
-                    <div>
-                      <label>风险</label
-                      ><span>{{
-                        riskLevelCN(
-                          getFirstDetectionOrNone(
-                            currentConv,
-                            message.id as number
-                          )?.riskLevel
-                        )
-                      }}</span>
-                    </div>
-                    <div
-                      v-if="getFirstDetectionOrNone(currentConv, message.id as number)?.confidence != null"
-                    >
-                      <label>置信度</label
-                      ><span>{{
-                        getFirstDetectionOrNone(
-                          currentConv,
-                          message.id as number
-                        )?.confidence
-                      }}</span>
-                    </div>
-                    <div
-                      v-if="getFirstDetectionOrNone(currentConv, message.id as number)?.intent"
-                    >
-                      <label>意图</label
-                      ><span>{{
-                        intentCN(
-                          getFirstDetectionOrNone(
-                            currentConv,
-                            message.id as number
-                          )?.intent
-                        )
-                      }}</span>
-                    </div>
-                    <div
-                      v-if="getFirstDetectionOrNone(currentConv, message.id as number)?.target"
-                    >
-                      <label>对象</label
-                      ><span>{{
-                        targetCN(
-                          getFirstDetectionOrNone(
-                            currentConv,
-                            message.id as number
-                          )?.target
-                        )
-                      }}</span>
-                    </div>
-                    <div
-                      v-if="getFirstDetectionOrNone(currentConv, message.id as number)?.polarity"
-                    >
-                      <label>情感</label
-                      ><span>{{
-                        polarityCN(
-                          getFirstDetectionOrNone(
-                            currentConv,
-                            message.id as number
-                          )?.polarity
-                        )
-                      }}</span>
-                    </div>
-                    <div
-                      v-if="!(getDetectionsForMessage(currentConv, message.id as number)?.length)"
-                    >
-                      <em>暂无真实检测记录，展示默认 NONE</em>
-                    </div>
-                  </div>
-                </template>
-                <UiTag
-                  class="risk-indicator"
-                  :style="tagStyle(getFirstDetectionOrNone(currentConv, message.id as number)?.riskLevel)"
-                >
-                  {{
-                    riskLevelCN(
-                      getFirstDetectionOrNone(currentConv, message.id as number)
-                        ?.riskLevel
-                    )
-                  }}
-                </UiTag>
-              </UiTooltip>
+              <UiTag
+                class="risk-indicator"
+                :style="tagStyle(getFirstDetectionOrNone(currentConv, message.id as number)?.riskLevel)"
+              >
+                {{
+                  riskLevelCN(
+                    getFirstDetectionOrNone(currentConv, message.id as number)
+                      ?.riskLevel
+                  )
+                }}
+              </UiTag>
             </template>
           </template>
         </RiskMessageList>
         <UiEmpty v-else description="未选中会话" />
       </div>
     </main>
+    
+    <!-- 风险详情卡片 -->
+    <RiskFloatCard
+      :visible="showFloatCard"
+      :detections="floatCardDetections"
+      :conversation-id="selectedConvId ?? undefined"
+      :message-id="selectedMessageId"
+      @close="closeFloatCard"
+    />
   </div>
 </template>
 
@@ -384,36 +331,33 @@ function riskItemStyle(level?: RiskLevel) {
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  background: rgba(22, 27, 34, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(22, 27, 34, 0.95);
   box-shadow: var(--shadow-lg);
   animation: fadeIn 0.4s ease-out;
 }
 
 .aside {
-  width: 320px;
+  width: 340px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
-  background: rgba(28, 33, 40, 0.5);
+  background: rgba(16, 20, 26, 0.8);
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
+  min-height: 0;
 }
 
 .aside-title {
   margin: 0;
-  padding: var(--spacing-md) var(--spacing-lg);
-  font-size: var(--font-size-base);
-  font-weight: 700;
+  padding: var(--spacing-lg);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
-  border-bottom: 2px solid var(--border);
-  background: rgba(100, 255, 218, 0.05);
+  letter-spacing: -0.02em;
+  border-bottom: 1px solid var(--border);
+  background: rgba(28, 33, 40, 0.6);
   flex-shrink: 0;
-  height: 50px;
+  height: 64px;
   display: flex;
   align-items: center;
 }
@@ -421,30 +365,30 @@ function riskItemStyle(level?: RiskLevel) {
 .conv-list {
   list-style: none;
   margin: 0;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-md);
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
   flex: 1;
+  min-height: 0;
 }
 
 .conv-list .risk-item {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  transition: all var(--transition-base);
-  background: rgba(22, 27, 34, 0.4);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  gap: var(--spacing-sm);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(28, 33, 40, 0.5);
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
+  border-left: 3px solid hsla(var(--risk-hue, 120), 60%, 50%, 0.6);
 }
 
 .conv-list .risk-item::before {
@@ -453,55 +397,60 @@ function riskItemStyle(level?: RiskLevel) {
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
-  background: var(--primary-cyan);
-  opacity: 0;
-  transition: opacity var(--transition-base);
-  box-shadow: 0 0 10px var(--primary-cyan-glow);
+  bottom: 0;
+  background: hsla(var(--risk-hue, 120), 40%, 50%, 0.04);
+  opacity: 1;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
 }
 
 .conv-list .risk-item:hover {
-  border-color: var(--primary-cyan);
-  background: var(--surface-1);
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px var(--primary-cyan-glow);
+  border-color: hsla(var(--risk-hue, 120), 60%, 50%, 0.5);
+  background: rgba(36, 41, 50, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .conv-list .risk-item:hover::before {
   opacity: 1;
+  background: hsla(var(--risk-hue, 120), 40%, 50%, 0.08);
 }
 
 .conv-list .risk-item.active {
-  border-color: var(--primary-cyan);
-  background: rgba(36, 200, 219, 0.1);
-  box-shadow: 0 4px 16px var(--primary-cyan-glow);
-  transform: translateX(8px);
+  border-color: hsla(var(--risk-hue, 120), 70%, 55%, 0.8);
+  border-left-width: 4px;
+  background: rgba(44, 51, 62, 0.9);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 
+              inset 0 0 0 1px hsla(var(--risk-hue, 120), 60%, 50%, 0.2);
 }
 
 .conv-list .risk-item.active::before {
   opacity: 1;
+  background: hsla(var(--risk-hue, 120), 50%, 50%, 0.12);
 }
 
 .conv-list .line-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .conv-list .cid-title {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 6px;
   flex: 1;
+  min-width: 0;
 }
 
 .conv-list .cid {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--primary-cyan);
   font-size: var(--font-size-xs);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  opacity: 0.9;
 }
 
 .conv-list .title {
@@ -510,18 +459,19 @@ function riskItemStyle(level?: RiskLevel) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 600;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-md);
+  padding: 0;
   overflow: hidden;
-  background: rgba(22, 27, 34, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(22, 27, 34, 0.6);
+  min-height: 0;
+  min-width: 0;
 }
 
 .main-header {
@@ -529,78 +479,64 @@ function riskItemStyle(level?: RiskLevel) {
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  border-bottom: 2px solid var(--border);
-  padding-bottom: var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background: rgba(28, 33, 40, 0.6);
   flex-shrink: 0;
-  height: 50px;
+  height: 64px;
 }
 
 .conv-title {
   margin: 0;
-  font-size: var(--font-size-base);
-  font-weight: 700;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .conv-title small {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  font-weight: 500;
-  margin-left: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  font-weight: 400;
+  margin-left: var(--spacing-sm);
 }
 
 .meta {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--font-size-xs);
+  gap: var(--spacing-md);
+  font-size: var(--font-size-sm);
   flex-shrink: 0;
 }
 
 .meta .time {
   color: var(--text-tertiary);
   white-space: nowrap;
+  font-size: var(--font-size-xs);
 }
 
 .messages-block {
   flex: 1;
+  overflow: hidden;
+  border: none;
+  border-radius: 0;
+  background: rgba(22, 27, 34, 0.4);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.messages-block :deep(.msg-list) {
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: rgba(28, 33, 40, 0.4);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  padding: var(--spacing-sm);
-}
-
-.tt {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: var(--spacing-xs) var(--spacing-md);
-  max-width: 380px;
-  font-size: var(--font-size-sm);
-}
-
-.tt label {
-  color: var(--primary-cyan);
-  font-weight: 600;
-}
-
-.tt span {
-  color: var(--text-secondary);
-}
-
-.tt em {
-  color: var(--text-tertiary);
-  font-style: normal;
-  grid-column: 1 / -1;
-  font-size: var(--font-size-xs);
+  min-height: 0;
 }
 
 @keyframes fadeIn {

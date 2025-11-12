@@ -301,15 +301,16 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
 
 .d-time {
   margin-left: auto;
-  color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
   white-space: nowrap;
+  font-weight: 600;
 }
 
 .d-row {
   margin-bottom: var(--spacing-sm);
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   line-height: 1.6;
 }
 
@@ -338,7 +339,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
 
 .d-evidence li {
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   line-height: 1.6;
   padding: var(--spacing-xs) 0;
   position: relative;

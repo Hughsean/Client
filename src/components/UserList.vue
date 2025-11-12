@@ -31,6 +31,8 @@ async function fetchUsers() {
   loading.value = true;
   try {
     users.value = await api.getAll();
+    // console.log("11111",users.value);
+    
     // 并发限流加载风险信息，等待完成后按风险排序
     await enrichUsersRisk(users.value);
     sortUsersByRisk();
@@ -61,9 +63,9 @@ function openRiskDialog(row: User) {
   router.push({
     name: "UserConversations",
     params: { userId: row.id },
-    query: { 
-      username: row.nickname || row.username || `用户 #${row.id}`
-    }
+    query: {
+      username: row.nickname || row.username || `用户 #${row.id}`,
+    },
   });
 }
 
@@ -129,7 +131,7 @@ function maxRiskLevel(a?: RiskLevel, b?: RiskLevel): RiskLevel | undefined {
 
 // 暴露刷新方法
 defineExpose({
-  refresh: fetchUsers
+  refresh: fetchUsers,
 });
 
 onMounted(fetchUsers);
@@ -157,7 +159,9 @@ onMounted(fetchUsers);
             </div>
 
             <div class="user-card__info">
-              <div class="user-name">{{ user.nickname ?? user.username ?? "-" }}</div>
+              <div class="user-name">
+                {{ user.nickname ?? user.username ?? "-" }}
+              </div>
               <div class="user-details">
                 <div class="detail-item">
                   <span class="detail-icon">📧</span>
@@ -198,7 +202,9 @@ onMounted(fetchUsers);
             <div class="risk-badge">
               <template v-if="user.id && riskCache[user.id]">
                 <UiTag
-                  :class="`risk-tag risk-tag--${riskCache[user.id].level.toLowerCase()}`"
+                  :class="`risk-tag risk-tag--${riskCache[
+                    user.id
+                  ].level.toLowerCase()}`"
                   >{{ riskLevelCN(riskCache[user.id].level) }}</UiTag
                 >
               </template>
@@ -260,7 +266,9 @@ onMounted(fetchUsers);
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .user-grid {
@@ -284,7 +292,7 @@ onMounted(fetchUsers);
 }
 
 .user-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -321,7 +329,11 @@ onMounted(fetchUsers);
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 193, 49, 0.8) 0%, rgba(100, 255, 218, 0.6) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 193, 49, 0.8) 0%,
+    rgba(100, 255, 218, 0.6) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -447,13 +459,13 @@ onMounted(fetchUsers);
   .user-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .user-card__main {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
-  
+
   .user-card__actions {
     flex-direction: column;
     gap: var(--spacing-md);

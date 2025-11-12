@@ -1,7 +1,15 @@
 // client/lib/src/index.ts
 
 // 配置
-export { getApiConfig, updateApiConfig, setBearerToken, getBearerToken, defaultApiConfig } from './config/api.config';
+export { 
+  getApiConfig, 
+  updateApiConfig, 
+  setBearerToken, 
+  getBearerToken, 
+  setAdminApiKey, 
+  getAdminApiKey, 
+  defaultApiConfig 
+} from './config/api.config';
 
 // HTTP 客户端与拦截器、错误类型
 export { request, addRequestInterceptor, addResponseInterceptor } from './http/httpClient';
@@ -29,3 +37,6 @@ export { ConversationsApi } from './apis/ConversationsApi';
 export { DepressionScaleApi } from './apis/DepressionScaleApi';
 export { DepressionAssessmentApi } from './apis/DepressionAssessmentApi';
 export { TestApi } from './apis/TestApi';
+
+// 工具函数导出
+export { rsaEncrypt, getPublicKey, clearCachedPublicKey } from './utils/crypto';

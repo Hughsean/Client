@@ -2,7 +2,7 @@
 
 轻量 TypeScript 前端调用库，Browser/Node/Tauri 通用，按控制器分模块导出 API，内置超时、重试、拦截器、错误统一与 ApiResponse 自动解包。
 
-**版本：0.3.0**
+**版本：0.4.0**
 
 ## 安装
 
@@ -39,19 +39,182 @@ updateApiConfig({
   // customFetch: (await import('cross-fetch')).fetch as any,
 });
 
-// 2) 登录 -> 设置 Token -> 调用受保护接口
+// 2) 登录 -> Token 自动存储 -> 调用受保护接口
 const users = new UsersApi();
 const loginResp = await users.login({ username: 'demo', password: '***' });
-if (loginResp?.token) {
-  setBearerToken(loginResp.token);
-}
+// ✅ Token 已自动存储,无需手动调用 setBearerToken()!
 
 // 之后所有请求会自动携带 Authorization: Bearer <token>
 const me = await users.getById(1);
 
-// 管理员接口
+// 3) 登出时清除 Token
+users.logout();
+
+// 管理员接口（需要启用管理员模式并设置 API Key）
+import { setAdminApiKey } from './src';
+updateApiConfig({ isAdminMode: true }); // 启用管理员模式
+setAdminApiKey('ADMIN_KEY_3f6e40cb43b742a0894754866c2e1abe');
+
 const admin = new AdminApi();
 const allUsers = await admin.getAllUsers();
+```
+
+## 密码安全传输
+
+### RSA 加密
+
+**注册**和**登录**时,密码都会自动使用 RSA-OAEP 加密传输,无需手动处理:
+
+```ts
+const users = new UsersApi();
+
+// 注册 - 密码自动 RSA 加密
+await users.register({
+  username: 'newuser',
+  password: 'mypassword',  // 明文密码,SDK 会自动加密
+  email: 'user@example.com'
+});
+
+// 登录 - 密码自动 RSA 加密
+await users.login({
+  username: 'newuser',
+  password: 'mypassword'  // 明文密码,SDK 会自动加密
+});
+```
+
+## 管理员 API Key 认证
+
+### 🔐 安全传输机制
+
+管理员 API Key 使用 **RSA-OAEP 加密传输**，确保密钥在网络传输过程中的安全性：
+
+- **前端**：使用服务器公钥加密 API Key
+- **传输**：加密后的 Base64 字符串通过 `X-Admin-API-Key` 请求头发送
+- **后端**：使用私钥解密并验证 API Key
+
+整个过程自动完成，无需手动处理加密逻辑。
+
+### 设置管理员模式
+
+从 **v0.4.0** 开始，SDK 支持管理员 API Key 认证。需要通过配置明确指定是否以管理员身份运行：
+
+```ts
+import { updateApiConfig, setAdminApiKey, AdminApi } from './src';
+
+// 方式 1: 推荐 - 通过配置启用管理员模式
+updateApiConfig({
+  isAdminMode: true  // 启用管理员模式
+});
+
+// 设置管理员 API Key
+setAdminApiKey('ADMIN_KEY_3f6e40cb43b742a0894754866c2e1abe');
+
+const admin = new AdminApi();
+
+// 访问管理员专用接口
+const allUsers = await admin.getAllUsers();
+const riskConversations = await admin.getRiskConversations(1);
+
+// 管理员访问任意普通用户接口（无需 JWT Token）
+const conversations = await admin.requestAs('GET', '/api/conversations/123');
+const profile = await admin.requestAs('GET', '/api/profiles/456');
+```
+
+### 认证模式说明
+
+SDK 根据 `isAdminMode` 配置决定使用哪种认证方式：
+
+| 配置 | 认证方式 | 请求头 | 适用场景 |
+|------|---------|--------|---------|
+| `isAdminMode: true` | 管理员 API Key | `X-Admin-API-Key` | 管理后台、运维工具 |
+| `isAdminMode: false` | JWT Token | `Authorization: Bearer` | 普通用户应用 |
+
+**重要**：
+- `isAdminMode: true` 时，即使设置了 JWT Token 也会被忽略
+- `isAdminMode: false` 时，即使设置了 Admin API Key 也会被忽略
+- 两种模式互斥，需要明确配置
+
+### 切换认证模式
+
+```ts
+import { updateApiConfig, setAdminApiKey, setBearerToken } from './src';
+
+// 切换到管理员模式
+updateApiConfig({ isAdminMode: true });
+setAdminApiKey('ADMIN_KEY_xxx');
+
+// 切换回普通用户模式
+updateApiConfig({ isAdminMode: false });
+setBearerToken('your-jwt-token');
+```
+
+### 管理员接口列表
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `getAllUsers()` | `GET /api/admin/users` | 获取所有用户（密码已脱敏） |
+| `getRiskConversations(userId)` | `GET /api/admin/users/{userId}/risk-conversations` | 获取用户风险对话 |
+| `requestAs(method, path, options?)` | 任意路径 | 管理员访问任意接口 |
+
+## Token 自动管理
+
+### 自动存储与使用
+
+从 **v0.3.0** 开始，登录成功后 **Token 会自动存储到全局**，无需手动调用 `setBearerToken()`：
+
+```ts
+const users = new UsersApi();
+
+// 登录 - Token 自动存储
+await users.login({ username: 'demo', password: 'pass' });
+
+// 后续所有请求自动携带 Authorization: Bearer <token>
+const profile = await users.getById(1);
+const sessions = await new LlmSessionsApi().getAll();
+```
+
+### 登出清除 Token
+
+```ts
+// 清除全局 Token
+users.logout();
+```
+
+### 持久化 Token（浏览器环境）
+
+如果需要在刷新页面后保持登录状态，可以将 Token 持久化到 `localStorage`：
+
+```ts
+import { setBearerToken, getBearerToken } from './src';
+
+// 应用启动时恢复 Token
+const savedToken = localStorage.getItem('auth_token');
+if (savedToken) {
+  setBearerToken(savedToken);
+}
+
+// 登录后保存 Token
+const loginResp = await users.login({ username, password });
+localStorage.setItem('auth_token', loginResp.token);
+
+// 登出时清除
+users.logout();
+localStorage.removeItem('auth_token');
+```
+
+### 手动管理 Token（高级）
+
+```ts
+import { setBearerToken, getBearerToken } from './src';
+
+// 手动设置 Token
+setBearerToken('your-jwt-token');
+
+// 获取当前 Token
+const currentToken = getBearerToken();
+
+// 清除 Token
+setBearerToken(null);
 ```
 
 ## LLM 会话最小示例（含 Abort、重试）
@@ -213,6 +376,36 @@ const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion:
   - 后端当前返回 { sessionId, saved, message }
 
 ## 变更日志（前端 SDK）
+
+### 0.4.0 (2025-11-12)
+
+**🔐 管理员 API Key 认证支持**
+
+- 新增 `setAdminApiKey()` 和 `getAdminApiKey()` 函数
+- HTTP 客户端优先使用 Admin API Key（`X-Admin-API-Key` 请求头）
+- 如果设置了 Admin API Key，将不再发送 JWT Token
+- `AdminApi` 新增 `requestAs()` 方法，允许管理员访问任意接口
+- 更新 `AdminApi` 文档，添加详细注释和使用示例
+
+**变更内容：**
+
+```ts
+// 新增管理员认证函数
+import { setAdminApiKey, getAdminApiKey } from './src';
+
+// 设置管理员 API Key
+setAdminApiKey('ADMIN_KEY_your_key_here');
+
+// AdminApi 新增方法
+const admin = new AdminApi();
+admin.requestAs('GET', '/api/conversations/123'); // 访问任意接口
+```
+
+**迁移指引：**
+
+- 管理员认证与普通用户认证互斥
+- 设置 Admin API Key 后，JWT Token 将被忽略
+- 需要切换回普通用户认证时，调用 `setAdminApiKey(null)`
 
 ### 0.3.0
 

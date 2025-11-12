@@ -1,11 +1,11 @@
-import { ref, Component } from 'vue'
+import { shallowRef, Component } from 'vue'
 
 interface NavbarIslandContent {
   component?: Component
   props?: Record<string, any>
 }
 
-const navbarIslandContent = ref<NavbarIslandContent | null>(null)
+const navbarIslandContent = shallowRef<NavbarIslandContent | null>(null)
 
 export function useNavbarIsland() {
   const setIslandContent = (content: NavbarIslandContent | null) => {
