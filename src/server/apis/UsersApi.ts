@@ -3,7 +3,7 @@
 import { request } from '../http/httpClient';
 import type { User, LoginRequest, LoginResponse } from '../types/user';
 import { rsaEncrypt, getPublicKey } from '../utils/crypto';
-import { getApiConfig, setBearerToken } from '../config/api.config';
+import { setBearerToken } from '../config/api.config';
 
 export class UsersApi {
   getById(id: number) {
@@ -24,16 +24,12 @@ export class UsersApi {
       if (!user.password) {
         throw new Error('密码不能为空');
       }
-
-      // 获取API配置
-      const apiConfig = getApiConfig();
-      
       // 获取RSA公钥
       const publicKey = await getPublicKey();
-      
+
       // 加密密码
       const encryptedPassword = await rsaEncrypt(user.password, publicKey);
-      
+
       // 发送加密后的注册请求
       return await request<void>('POST', '/api/users/register', {
         body: {
@@ -64,13 +60,13 @@ export class UsersApi {
     try {
       // 获取API配置
       // const apiConfig = getApiConfig();
-      
+
       // 获取RSA公钥
       const publicKey = await getPublicKey();
-      
+
       // 加密密码
       const encryptedPassword = await rsaEncrypt(payload.password, publicKey);
-      
+
       // 发送加密后的登录请求
       const response = await request<LoginResponse>('POST', '/api/users/login', {
         body: {
@@ -78,12 +74,12 @@ export class UsersApi {
           password: encryptedPassword,
         },
       });
-      
+
       // 登录成功后自动存储token到全局
       if (response.token) {
         setBearerToken(response.token);
       }
-      
+
       return response;
     } catch (error) {
       console.error('登录失败:', error);
