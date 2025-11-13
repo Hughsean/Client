@@ -3,7 +3,7 @@ name: Build Tauri App
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -15,12 +15,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+          - platform: "ubuntu-22.04"
+            args: ""
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -30,7 +30,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -68,61 +68,81 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: '情感陪伴（管理员端）${{ github.ref_name }}'
+          releaseName: "情感陪伴（管理员端）${{ github.ref_name }}"
           releaseBody: |
             ## 🎉 版本更新说明
-            
+
             ### ✨ 新增功能
-            - 🔐 新增管理员 API 密钥认证机制
-            - 🛡️ 增强安全特性，提升系统安全性
-            - 📊 优化用户资料管理，支持数据备份与恢复
-            - 🎨 界面美化，提升用户体验
-            
-            ### 🔧 优化改进
-            - 📁 调整目录结构，代码组织更清晰
-            - 🔄 更新用户详情页面，信息展示更友好
-            - 🚀 性能优化，提升应用响应速度
-            - 🪟 优化窗口属性配置
-            
-            ### 🛠️ 技术更新
-            - ⬆️ 升级 Rust 2024 edition，要求 Rust 1.85+
-            - 📦 支持多种打包格式（MSI, NSIS, DEB, RPM, AppImage）
-            - 🔨 改进构建工作流，优化发布流程
-            
+            - 📓 **用户日记管理模块**
+              - 支持创建、编辑、删除和查看用户日记
+              - 自动 AI 心情分析,智能生成心情描述
+              - 完整的日记 CRUD 操作接口
+            - 🛡️ **风险管理增强**
+              - 新增风险检测处理功能,支持标记处理状态
+              - 可为风险检测结果添加处理备注
+              - 批量处理风险会话功能
+            - 📜 **开源协议**
+              - 新增 MIT License,明确项目开源协议
+
+            ### 🎨 界面优化
+            - 💎 **风险监控界面全面升级**
+              - 风险消息列表新增渐变色彩标识,风险等级一目了然
+              - 风险等级使用色彩编码(红→黄→绿),视觉化展示
+              - 新增处理状态徽章,实时显示处理进度
+              - 优化对话列表布局,信息展示更清晰
+            - 🎭 **风险检测卡片重构**
+              - 新增处理对话框,支持快速标记和添加备注
+              - 显示检测 ID、处理状态和处理备注
+              - 改进交互体验,操作更流畅
+            - 🎯 **导航栏优化**
+              - 调整布局结构,信息层级更合理
+            - 📊 **滚动条美化**
+              - 自定义滚动条样式,统一视觉风格
+
+            ### 🔧 技术更新
+            - 📦 **服务器 SDK 升级至 v0.4.2**
+              - 新增 `DiariesApi` 日记管理接口
+              - 新增 `AdminApi.processRiskDetection()` 风险处理方法
+              - 完善类型定义,新增 `UserDiary`、`ProcessRiskDetectionPayload` 等类型
+              - 优化密码加密传输逻辑
+            - 🔐 **Tauri 配置优化**
+              - 更新应用权限配置
+              - 调整包管理器版本
+
             ---
-            
+
             ## 📦 下载安装
-            
+
             ### 支持平台
             请根据您的操作系统选择对应的安装包：
-            
+
             | 操作系统 | 推荐格式 | 说明 |
             |---------|---------|------|
             | 🍎 **macOS** | `.dmg` | 支持 Apple Silicon (M1/M2) |
             | 🪟 **Windows** | `.msi` 或 `.exe` | Windows 10/11 64位 |
             | 🐧 **Linux** | `.AppImage`、`.deb` 或 `.rpm` | Ubuntu 22.04+ / Fedora / 其他发行版 |
-            
+
             ### 📥 安装步骤
             1. 从下方 Assets 区域下载适合您平台的安装包
             2. 双击运行安装程序
             3. 按照安装向导完成安装
             4. 启动应用程序开始使用！
-            
+
             ### ⚠️ 注意事项
             - Windows 用户可能需要允许来自未知发布者的应用安装
             - macOS 用户首次打开时需要在"系统偏好设置 > 安全性与隐私"中允许运行
             - Linux 用户可能需要赋予 AppImage 文件执行权限：`chmod +x *.AppImage`
-            
+
             ---
-            
+
             ## 📝 完整更新日志
             查看详细变更: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.ref_name }}
-            
+
             ## 🐛 问题反馈
             如果您在使用过程中遇到任何问题，请[提交 Issue](https://github.com/${{ github.repository }}/issues/new)
-            
+
             ---
-            
+
             **感谢使用情感陪伴管理系统！** ❤️
           releaseDraft: false
           prerelease: false
