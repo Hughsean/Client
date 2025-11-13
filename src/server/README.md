@@ -2,7 +2,7 @@
 
 轻量 TypeScript 前端调用库，Browser/Node/Tauri 通用，按控制器分模块导出 API，内置超时、重试、拦截器、错误统一与 ApiResponse 自动解包。
 
-**版本：0.4.0**
+**版本：0.4.1**
 
 ## 安装
 
@@ -57,6 +57,13 @@ setAdminApiKey('ADMIN_KEY_3f6e40cb43b742a0894754866c2e1abe');
 
 const admin = new AdminApi();
 const allUsers = await admin.getAllUsers();
+const riskConversations = await admin.getRiskConversations(1);
+
+// 处理风险检测结果（标记已处理 + 备注）
+await admin.processRiskDetection(123, {
+  processed: true,
+  processNotes: '已联系用户，建议线下评估'
+});
 ```
 
 ## 密码安全传输
@@ -114,10 +121,6 @@ const admin = new AdminApi();
 // 访问管理员专用接口
 const allUsers = await admin.getAllUsers();
 const riskConversations = await admin.getRiskConversations(1);
-
-// 管理员访问任意普通用户接口（无需 JWT Token）
-const conversations = await admin.requestAs('GET', '/api/conversations/123');
-const profile = await admin.requestAs('GET', '/api/profiles/456');
 ```
 
 ### 认证模式说明
@@ -153,8 +156,17 @@ setBearerToken('your-jwt-token');
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | `getAllUsers()` | `GET /api/admin/users` | 获取所有用户（密码已脱敏） |
-| `getRiskConversations(userId)` | `GET /api/admin/users/{userId}/risk-conversations` | 获取用户风险对话 |
-| `requestAs(method, path, options?)` | 任意路径 | 管理员访问任意接口 |
+| `getRiskConversations(userId)` | `GET /api/admin/users/{userId}/risk-conversations` | 用户风险对话列表 |
+
+#### 处理风险检测结果
+
+接口：`POST /api/admin/users/risk-detections/{detectionId}/process`
+
+用法示例：
+
+```ts
+await admin.processRiskDetection(detectionId, { processed: true, processNotes: '已回访' });
+```
 
 ## Token 自动管理
 
@@ -377,6 +389,19 @@ const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion:
 
 ## 变更日志（前端 SDK）
 
+### 0.4.1 (2025-11-13)
+
+**🩺 新增风险检测处理接口**
+
+- 新增 `AdminApi.processRiskDetection(detectionId, { processed, processNotes })` 方法
+- 支持标记风险检测结果已处理并附加处理备注
+- 类型新增：`processed`, `processNotes` 字段以及 `ProcessRiskDetectionPayload`
+
+**迁移指引：**
+
+- 若需要在管理端界面显示处理状态，请渲染新字段 `processed` 与 `processNotes`
+- 旧代码不受影响；未处理的结果默认为 `processed = false`
+
 ### 0.4.0 (2025-11-12)
 
 **🔐 管理员 API Key 认证支持**
@@ -384,7 +409,6 @@ const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion:
 - 新增 `setAdminApiKey()` 和 `getAdminApiKey()` 函数
 - HTTP 客户端优先使用 Admin API Key（`X-Admin-API-Key` 请求头）
 - 如果设置了 Admin API Key，将不再发送 JWT Token
-- `AdminApi` 新增 `requestAs()` 方法，允许管理员访问任意接口
 - 更新 `AdminApi` 文档，添加详细注释和使用示例
 
 **变更内容：**
@@ -395,10 +419,6 @@ import { setAdminApiKey, getAdminApiKey } from './src';
 
 // 设置管理员 API Key
 setAdminApiKey('ADMIN_KEY_your_key_here');
-
-// AdminApi 新增方法
-const admin = new AdminApi();
-admin.requestAs('GET', '/api/conversations/123'); // 访问任意接口
 ```
 
 **迁移指引：**

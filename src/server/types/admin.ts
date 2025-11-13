@@ -24,7 +24,15 @@ export interface AdminRiskMessageDetection {
     confidence?: number;
     evidence?: string[];
     detectedAt?: string; // ISO 时间
+    processed?: boolean; // 是否已处理
+    processNotes?: string | null; // 处理备注
     [k: string]: unknown;
+}
+
+// 管理员处理风险检测结果请求体
+export interface ProcessRiskDetectionPayload {
+    processed: boolean;
+    processNotes?: string | null;
 }
 
 export interface AdminRiskConversation {

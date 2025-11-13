@@ -2,7 +2,7 @@
 
 import { request } from '../http/httpClient';
 import type { User } from '../types/user';
-import type { AdminRiskConversation } from '../types/admin';
+import type { AdminRiskConversation, AdminRiskMessageDetection, ProcessRiskDetectionPayload } from '../types/admin';
 
 /**
  * 管理员 API
@@ -52,5 +52,15 @@ export class AdminApi {
    */
   getRiskConversations(userId: number) {
     return request<AdminRiskConversation[]>('GET', `/api/admin/users/${userId}/risk-conversations`);
+  }
+
+  /**
+   * 处理单条风险检测结果（标记已处理 + 备注）
+   * POST /api/admin/users/risk-detections/{detectionId}/process
+   * @param detectionId 检测结果ID
+   * @param payload { processed: boolean, processNotes?: string }
+   */
+  processRiskDetection(detectionId: number, payload: ProcessRiskDetectionPayload) {
+    return request<AdminRiskMessageDetection>('POST', `/api/admin/users/risk-detections/${detectionId}/process`, { body: payload });
   }
 }

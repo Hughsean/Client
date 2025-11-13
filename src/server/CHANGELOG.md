@@ -2,6 +2,32 @@
 
 All notable changes to this SDK will be documented in this file.
 
+## 0.4.1 (2025-11-13)
+
+### 🩺 新增：风险检测处理接口
+
+#### 新增 API (0.4.1)
+
+- `AdminApi.processRiskDetection(detectionId, { processed, processNotes })` 标记风险检测结果处理状态并添加备注
+
+#### 类型更新
+
+- `AdminRiskMessageDetection` 增加 `processed`, `processNotes`
+- 新增请求体类型 `ProcessRiskDetectionPayload`
+
+#### 迁移指引 (0.4.1)
+
+- 旧代码无需修改；未处理结果默认 `processed = false`
+- 若前端需展示处理备注，请读取 `processNotes`，为空表示无备注
+
+#### 文件变更 (0.4.1)
+
+- 修改：`types/admin.ts` - 新增字段与请求体类型
+- 修改：`apis/AdminApi.ts` - 新增处理方法
+- 更新：`README.md` - 添加接口文档与示例
+
+---
+
 ## 0.4.0 (2025-11-12)
 
 ### 🔐 新增功能：管理员 API Key 认证
@@ -10,7 +36,6 @@ All notable changes to this SDK will be documented in this file.
 
 - `setAdminApiKey(apiKey: string | null)` - 设置管理员 API Key
 - `getAdminApiKey()` - 获取当前管理员 API Key
-- `AdminApi.requestAs(method, path, options?)` - 管理员访问任意接口
 
 #### 核心变更
 
