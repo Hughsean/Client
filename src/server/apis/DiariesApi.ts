@@ -1,5 +1,4 @@
 import { request } from '../http/httpClient';
-import type { ApiResponse } from '../types/api';
 import type { UserDiary, CreateDiaryRequest, UpdateDiaryRequest } from '../types/diary';
 
 /**

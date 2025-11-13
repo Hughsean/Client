@@ -3,7 +3,7 @@
 import { request } from '../http/httpClient';
 import type { User, LoginRequest, LoginResponse } from '../types/user';
 import { rsaEncrypt, getPublicKey } from '../utils/crypto';
-import { getApiConfig, setBearerToken } from '../config/api.config';
+import { setBearerToken } from '../config/api.config';
 
 export class UsersApi {
   getById(id: number) {
@@ -23,11 +23,7 @@ export class UsersApi {
       // 检查密码是否存在
       if (!user.password) {
         throw new Error('密码不能为空');
-      }
-
-      // 获取API配置
-      const apiConfig = getApiConfig();
-      
+      }      
       // 获取RSA公钥
       const publicKey = await getPublicKey();
       
