@@ -7,7 +7,6 @@ import { setAdminApiKey, updateApiConfig } from "./server";
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 
 // 仅在 Tauri 环境下使用 plugin-http 与直连后端；
-// 浏览器开发环境走 Vite 代理（/api -> http://localhost:8080），避免 CORS。
 
 updateApiConfig({
     baseURL: 'http://127.0.0.1:8080',

@@ -1,216 +1,223 @@
-# TypeScript SDK for Spring Boot Service
+# x-app （HFUT A807 团队）
 
-轻量 TypeScript 前端调用库，Browser/Node/Tauri 通用，按控制器分模块导出 API，内置超时、重试、拦截器、错误统一与 ApiResponse 自动解包。
+跨平台（Web + Tauri 桌面）风险监测与用户管理前端。基于 Vue 3 + TypeScript + Vite + Tauri 2（Rust）。
 
-## 安装
+🧩 风险会话监控 · 👥 用户画像 · 📊 抑郁量表 / 评估 · 🔐 管理端快捷操作
 
-> 该 SDK 为源码形式放置于 `client/lib` 下，建议在你的前端项目中通过 tsconfig paths 或本地包引用使用。
+---
 
-在 Node 环境下建议安装 fetch 兼容层（可选）：
+## ✨ 核心特性
 
-```bash
-pnpm add cross-fetch
+- 单代码仓同时支持浏览器与桌面（Tauri 静态资源 + Rust 宿主）
+- 组件化布局：导航岛（Navbar Islands）、风险侧边消息、浮动卡片等
+- 类型安全 API 层：`src/server/apis/*` + `src/server/types/*`
+- 可切换的 HTTP 访问实现：浏览器下（可配代理）、Tauri 下使用 `@tauri-apps/plugin-http` 规避 CORS
+- 路由动画与自适应全屏页面（如用户会话视图）
+- 统一工具函数：时间格式化、消息处理、风险等级计算
+- 构建前类型检查：`vue-tsc --noEmit`
+
+## 🛠 技术栈
+
+| 领域 | 技术 |
+| ---- | ----- |
+| 前端框架 | Vue 3 (Composition API) |
+| 构建工具 | Vite 7 + esbuild |
+| 语言 | TypeScript 5.9 |
+| 路由 | vue-router 4 |
+| 桌面容器 | Tauri 2 (Rust 2024 edition) |
+| HTTP 插件 | `@tauri-apps/plugin-http` |
+| 其它 | 自定义 API 封装、过渡动画、全局样式 |
+
+## 📂 目录结构概览
+
+```text
+├── index.html
+├── package.json
+├── vite.config.ts            # Vite & Tauri 开发端口/别名
+├── src
+│  ├── main.ts                # 入口：注册路由 + API 配置
+│  ├── App.vue                # 根布局（导航 + 主内容 + 消息容器）
+│  ├── assets/styles/global.css
+│  ├── components             # 通用业务组件
+│  ├── views                  # 路由视图页（风险监测 / 用户 / Splash / 404）
+│  ├── router/index.ts        # 路由定义
+│  ├── server                 # API & 类型 & httpClient
+│  │  ├── apis                # 具体接口封装 (Admin / Users / Conversations ...)
+│  │  ├── types               # TS 类型定义
+│  │  ├── http/httpClient.ts  # 可注入 fetch 实现
+│  │  └── config/api.config.ts
+│  ├── utils                  # 通用工具（消息/时间/风险计算）
+│  └── ui                     # UI 基础组件（Button / Card / Dialog ...）
+├── src-tauri                 # Tauri Rust 工程
+│  ├── Cargo.toml             # Rust 依赖 & edition
+│  ├── src/main.rs            # Tauri 主入口
+│  └── tauri.conf.json        # Tauri 配置
+└── public                    # 静态资源
 ```
 
-在 Tauri 环境可选使用 HTTP 插件以规避 CORS（可选）：
+## 🚀 快速开始
+
+### 1. 环境要求
+
+| 类别 | 版本建议 |
+| ---- | -------- |
+| Node.js | >= 18 LTS |
+| 包管理器 | pnpm 8+ |
+| Rust | 最新 stable（支持 2024 edition） |
+| Tauri 依赖 | 参考 [Tauri 官方站点](https://tauri.app/)（系统级依赖，如 Windows VC++ 运行时） |
+
+### 2. 安装依赖
 
 ```bash
-pnpm add @tauri-apps/plugin-http
+pnpm install
 ```
 
-## 快速开始
+### 3. 开发模式（纯 Web）
+
+```bash
+pnpm dev
+```
+
+访问默认端口（Vite 默认 5173；未显式设定）。
+
+### 4. 桌面开发 (Tauri)
+
+```bash
+pnpm tauri dev
+```
+
+Tauri 使用 `vite.config.ts` 中固定端口 1420（HMR 1421）。
+
+### 5. 构建
+
+| 目标 | 命令 | 说明 |
+| ---- | ---- | ---- |
+| Web 生产包 | `pnpm build` | 生成 `dist/` 静态资源 |
+| 桌面安装包 | `pnpm tauri build` | 生成平台安装/可执行文件 |
+
+### 6. 预览 Web 构建结果
+
+```bash
+pnpm preview
+```
+
+## 🔌 API 配置说明
+
+入口文件 `src/main.ts` 中：
 
 ```ts
-import {
-  updateApiConfig,
-  setBearerToken,
-  UsersApi,
-  AdminApi,
-  LlmSessionsApi,
-} from './src';
-
-// 1) 基础配置
 updateApiConfig({
-  baseURL: 'http://localhost:8080',
-  timeoutMs: 15000,
-  // 如果在 Node，请注入 cross-fetch：
-  // customFetch: (await import('cross-fetch')).fetch as any,
+  baseURL: 'http://127.0.0.1:8080',
+  timeoutMs: 10000,
+  customFetch: tauriFetch,
+  isAdminMode: true,
 });
-
-// 2) 登录 -> 设置 Token -> 调用受保护接口
-const users = new UsersApi();
-const loginResp = await users.login({ username: 'demo', password: '***' });
-if (loginResp?.token) {
-  setBearerToken(loginResp.token);
-}
-
-// 之后所有请求会自动携带 Authorization: Bearer <token>
-const me = await users.getById(1);
-
-// 管理员接口
-const admin = new AdminApi();
-const allUsers = await admin.getAllUsers();
+setAdminApiKey('ADMIN_KEY_...');
 ```
 
-## LLM 会话最小示例（含 Abort、重试）
+建议后续改为使用 `.env` / 安全注入方式，避免在仓库中硬编码密钥。
 
-```ts
-import { LlmSessionsApi, updateApiConfig } from './src';
+示例（创建 `.env`）：
 
-// 配置重试策略（幂等方法默认自动重试，POST 仍可手动开启）
-updateApiConfig({
-  retry: { retries: 2, initialDelayMs: 300, backoffFactor: 2, maxDelayMs: 4000, retryMethods: ['GET','PUT','DELETE','HEAD','OPTIONS'] }
-});
-
-const api = new LlmSessionsApi();
-
-// Abort 用法
-const controller = new AbortController();
-const timer = setTimeout(() => controller.abort(), 5000);
-
-try {
-  const session = await api.createSession({ userId: 1 });
-  const msg = await api.postMessage(session.id, { role: 'user', content: '你好' });
-  console.log('assistant:', msg);
-} finally {
-  clearTimeout(timer);
-}
+```env
+VITE_API_BASE=http://127.0.0.1:8080
+VITE_ADMIN_KEY=xxxxxxxx
 ```
 
-## 错误模型
+并在代码中读取：`import.meta.env.VITE_API_BASE`。
 
-- 业务错误（ApiResponse.success=false）会抛出 `ApiError`：
-  - `status`: HTTP 状态码
-  - `code`: 业务/客户端错误码
-  - `message`: 错误消息
-  - `details`: 原始响应体或上下文
-- 网络/超时/解析错误也统一封装为 `ApiError`，`code` 分别为 `NETWORK_ERROR` / `TIMEOUT_ABORT` / `JSON_PARSE_ERROR`。
+## 🔒 安全注意
 
-捕获示例：
+- 管理端 API Key 不应提交至版本控制。
+- 生产构建请确认未开启 `devtools`（当前 Tauri features 包含 `devtools`，正式发布时可去掉）。
+- 若需要上行敏感数据（风险会话内容），请确保后端使用 HTTPS 并开启鉴权。
 
-```ts
-import { ApiError } from './src';
+## 🧱 架构要点
 
-try {
-  const users = await new UsersApi().getAll();
-} catch (e) {
-  if (e instanceof ApiError) {
-    console.error(e.status, e.code, e.message, e.details);
-  }
-}
-```
+1. UI 层：`views/` + `components/` + `ui/` 分离业务与基础组件。
+2. API 层：`server/apis/*.ts` 只做请求与响应类型约束，避免混入视图逻辑。
+3. 可插拔 Fetch：浏览器 -> 原生 fetch；Tauri -> `plugin-http`（绕过 CORS）。
+4. 风险逻辑集中在 `utils/risk.ts` 与相关风险组件（`Risk*`）。
+5. 通过路由 meta 控制布局（隐藏导航、全屏展示等）。
+6. Server SDK（前端调用后端的可复用层）详见：[Server SDK 说明](./src/server/README.md)。
 
-## 浏览器 / Node / Tauri
+### Server SDK 快速概览
 
-- 浏览器：无需额外配置，使用原生 `fetch`。
-- Node：注入 `customFetch`。
-  ```ts
-  updateApiConfig({ customFetch: (await import('cross-fetch')).fetch as any });
-  ```
-- Tauri：可注入 `@tauri-apps/plugin-http` 的 `fetch`。
-  ```ts
-  import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
-  updateApiConfig({ customFetch: tauriFetch as any });
-  ```
+位于 `src/server/`，提供：
 
-## API 模块一览
+- 可配置 `updateApiConfig()`（支持 baseURL / 超时 / 自定义 fetch / 管理员模式）
+- 自动 Token / Admin API Key / RSA 加密登录与注册密码
+- 分模块 API 类：`UsersApi` / `AdminApi` / `LlmSessionsApi` / `ProfilesApi` / `ConversationsApi` 等
+- `plugin-http` 注入以在 Tauri 中规避 CORS
+- 可插拔请求 / 响应拦截器与重试策略
+- 统一 `ApiError` 错误模型
 
-- `UsersApi`: 用户 CRUD、登录
-- `AdminApi`: 管理端用户列表
-- `ProfilesApi`: 用户画像 CRUD
-- `SignatureApi`: 签名创建/校验
-- `LlmSessionsApi`: LLM 会话管理与消息
-- `CommunityApi`: 帖子/评论/点赞
-- `ConversationsApi`: 会话列表（新增：按会话 ID 查询会话消息内容，仅返回用户/助手消息）
-- `DepressionScaleApi`: 量表列表
-- `DepressionAssessmentApi`: 评估 CRUD
-- `TestApi`: 健康检查/示例
+更多用法与迁移指南请阅读：[src/server/README.md](./src/server/README.md)
 
-## 自定义拦截器
+## 📜 可用 NPM Scripts
 
-```ts
-import { addRequestInterceptor, addResponseInterceptor } from './src';
+| 脚本 | 作用 |
+| ---- | ---- |
+| `pnpm dev` | 启动 Vite 开发服务器 |
+| `pnpm build` | 类型检查 + 构建生产静态文件 |
+| `pnpm preview` | 本地预览生产构建结果 |
+| `pnpm tauri dev` | 启动 Tauri 桌面调试（等价执行 `tauri dev`） |
+| `pnpm tauri build` | 构建桌面发行包 |
 
-addRequestInterceptor(async (ctx) => {
-  // 追加全局查询参数或头
-  ctx.headers['X-Client'] = 'sdk';
-  return ctx;
-});
+## 🧪 建议的后续测试策略 (TODO)
 
-addResponseInterceptor(async (ctx) => {
-  console.log(ctx.method, ctx.url, ctx.response.status);
-  return ctx;
-});
-```
+- 单元测试：针对 `utils`（时间 / 风险计算 / 消息处理）
+- 端到端（E2E）：关键会话流与风险标记
+- API Mock：使用 MSW 或自建 mock server
 
-## ConversationsApi - 新增接口
+## 🧹 代码规范 & 建议
 
-`ConversationsApi` 新增了一个方法 `getContents(convId: number)`，用于按会话 ID 拉取该会话的消息历史，并且只返回 `senderRole` 为 `user` 或 `assistant` 的消息（服务端已做过滤）。
+- 推荐安装 ESLint + Prettier（当前仓库尚未配置，可后续补充）
+- 组件命名：业务组件 `FeatureThing.vue`，基础复用组件放 `ui/`
+- 避免直接在组件中写死字符串常量（可集中 i18n / constants）
+- 风险、会话等枚举/类型集中放置在 `server/types/`
 
-示例：
+## 🤝 贡献指南
 
-```ts
-import { ConversationsApi } from './src';
+1. Fork & 创建分支：`feat/xxx` / `fix/xxx`
+2. 保持提交信息清晰（动词开头，如 `feat: 添加风险等级展示`）
+3. 提交前本地构建：`pnpm build`
+4. 发起 PR 并 @ HFUT A807 审阅人
 
-const conv = new ConversationsApi();
-const msgs = await conv.getContents(123);
-console.log(msgs);
-// msgs 为 ConversationMessage[]，每个元素包含 senderRole, content, createdAt 等字段
-```
+## 📅 路线图 (Roadmap 方向性草案)
 
-如果后端也支持 `assistance` 这种变体，可以在 SDK 层额外做兼容，但目前服务端实现使用 `assistant`。
+- [ ] 抽离环境配置（API Key / BaseURL）至 `.env`
+- [ ] 添加 ESLint + Prettier + Husky pre-commit
+- [ ] 引入 Vitest & MSW 做 API 单测
+- [ ] 增加 i18n（多语言切换）
+- [ ] 风险会话实时推送（WebSocket / SSE）
+- [ ] 暗色模式支持
 
-## 测试与覆盖点
+## 👥 团队
 
-已提供可选的 `vitest + msw` 示例用例：
-- `httpClient.spec.ts`: 重试与超时、业务错误解包
-- `usersApi.spec.ts`: 登录后携带 token、获取用户
+HFUT A807 团队（合肥工业大学）
 
-运行（示例）：
-```bash
-pnpm add -D vitest msw @types/node
-pnpm vitest
-```
+> 欢迎 Issue / PR / 需求讨论。
 
-## LLM 会话 API 参考
+## 📄 许可
 
-下面是 SDK 中 LLM 会话相关方法的快速参考（类型已与服务端 DTO 对齐）：
+本项目使用 [MIT License](./LICENSE)。
 
-- createSession(payload: SessionCreateRequest) -> SessionCreateResponse
-  - POST /api/llm/sessions
-  - Request 示例:
+简述：允许商用 / 修改 / 分发 / 私用，需保留版权与许可声明；不提供任何担保或责任承担。
 
-```ts
-import { LlmSessionsApi } from './src';
+## 🐞 问题反馈
 
-const api = new LlmSessionsApi();
-const resp = await api.createSession({ userId: 1, dialogueId: undefined });
-// resp.sessionId, resp.prompt, resp.clientIp, resp.location, resp.userProfile, resp.timeoutSeconds
-```
+请附：
 
-- getSessionStatus(sessionId: string) -> SessionStatusResponse
-  - GET /api/llm/sessions/{sessionId}
-  - 返回会话状态与最后活跃时间（ISO 字符串）
+- 描述（期望 vs 实际）
+- 复现步骤 / 截图 / 日志
+- 运行环境（OS / Node / 桌面 or Web）
 
-```ts
-const status = await api.getSessionStatus(resp.sessionId);
-// status.sessionId, status.userId, status.dialogueId, status.lastActive, status.timeoutSeconds
-```
+## 🙌 致谢
 
-- postMessage(sessionId: string, payload: MessageRequest) -> MessageResponse
-  - POST /api/llm/sessions/{sessionId}/messages
-  - Request 示例（与后端保持一致）:
+感谢开源生态（Vue / Vite / Tauri / TypeScript）。
 
-```ts
-const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion: 'neutral' });
-// msgResp.reply, msgResp.toolCalls, msgResp.sessionClosed, msgResp.dialogueId, msgResp.title
-```
+---
 
-- closeSession(sessionId: string) -> CloseSessionResponse
-  - POST /api/llm/sessions/{sessionId}/close
-  - 后端当前返回 { sessionId, saved, message }
+若需英文版 README，可提 Issue 后续补充。
 
-错误处理说明
-
-- SDK 的 `httpClient` 会对非 2xx 响应抛出 `ApiError`，包含 `status`, `code`, `message`, `details` 字段。
-- 注意：目前后端在一些错误路径返回的是带有 HTTP 状态码但空 body 的响应（例如 404 + null body）。如果希望客户端从响应体读取 `detail` 字段，请在后端实现统一异常映射（`@ControllerAdvice`）以返回标准错误 JSON；或者我可以在 SDK 层做更宽容的解析以兼容现有行为。
