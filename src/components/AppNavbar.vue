@@ -39,11 +39,25 @@
       <!-- 右侧：状态和操作区域 -->
       <div class="navbar-actions">
         <slot name="actions">
-          <!-- 默认显示系统状态 -->
-          <div class="status-indicator">
-            <span class="status-dot"></span>
-            <span class="status-text">在线</span>
+          <!-- 在线状态指示器 -->
+          <div 
+            class="status-indicator" 
+            :class="{ offline: !isOnline }"
+            @click="checkOnlineStatus"
+            :title="isOnline ? '服务器在线 - 点击重新检测' : '服务器离线 - 点击重试'"
+          >
+            <span class="status-dot" :class="{ offline: !isOnline }"></span>
+            <span class="status-text">{{ onlineStatusText }}</span>
           </div>
+          <!-- 退出按钮 -->
+          <button class="exit-button" @click="handleExit" title="退出程序">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16 17L21 12L16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="exit-text">退出</span>
+          </button>
         </slot>
       </div>
     </div>
@@ -51,9 +65,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { useRoute } from "vue-router";
 import { useNavbarIsland } from "../composables/useNavbarIsland";
+import { TestApi } from "../server";
+import { exit } from '@tauri-apps/plugin-process';
 
 const route = useRoute();
 const { navbarIslandContent } = useNavbarIsland();
@@ -70,6 +86,56 @@ const pageTitleMap: Record<string, string> = {
 
 const pageTitle = computed(() => {
   return pageTitleMap[route.name as string] || '管理系统';
+});
+
+// 在线状态检测
+const isOnline = ref(false);
+const isChecking = ref(false);
+const testApi = new TestApi();
+let statusCheckInterval: number | null = null;
+
+const checkOnlineStatus = async () => {
+  if (isChecking.value) return;
+  isChecking.value = true;
+  try {
+    await testApi.hello();
+    isOnline.value = true;
+  } catch (error) {
+    isOnline.value = false;
+    console.error('服务器连接检测失败:', error);
+  } finally {
+    isChecking.value = false;
+  }
+};
+
+const onlineStatusText = computed(() => {
+  return isOnline.value ? '在线' : '离线';
+});
+
+// 退出程序
+const handleExit = async () => {
+  if (confirm('确定要退出程序吗？')) {
+    try {
+      await exit(0);
+    } catch (error) {
+      console.error('退出失败:', error);
+      // 如果 exit 失败，尝试关闭窗口
+      window.close();
+    }
+  }
+};
+
+onMounted(() => {
+  // 立即检测一次
+  checkOnlineStatus();
+  // 每5秒检测一次在线状态
+  statusCheckInterval = window.setInterval(checkOnlineStatus, 5000);
+});
+
+onBeforeUnmount(() => {
+  if (statusCheckInterval !== null) {
+    clearInterval(statusCheckInterval);
+  }
 });
 </script>
 
@@ -309,6 +375,15 @@ const pageTitle = computed(() => {
   box-shadow: 0 0 16px rgba(52, 211, 153, 0.3);
 }
 
+.status-indicator.offline {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.status-indicator.offline:hover {
+  border-color: #ef4444;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+}
+
 .status-dot {
   width: 6px;
   height: 6px;
@@ -318,10 +393,58 @@ const pageTitle = computed(() => {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+.status-dot.offline {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+  animation: none;
+}
+
 .status-text {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   font-weight: 500;
+}
+
+.exit-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: rgba(30, 35, 45, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.exit-button:hover {
+  background: rgba(30, 35, 45, 0.9);
+  border-color: #ef4444;
+  color: #ef4444;
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+}
+
+.exit-button:active {
+  transform: scale(0.95);
+}
+
+.exit-button svg {
+  transition: transform 0.3s ease;
+}
+
+.exit-button:hover svg {
+  transform: translateX(2px);
+}
+
+.exit-text {
+  white-space: nowrap;
 }
 
 /* ============ 响应式设计 ============ */
@@ -361,6 +484,10 @@ const pageTitle = computed(() => {
   }
   
   .status-text {
+    display: none;
+  }
+  
+  .exit-text {
     display: none;
   }
 }

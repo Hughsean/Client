@@ -25,6 +25,7 @@ export * from './types/community';
 export * from './types/conversation';
 export * from './types/depression';
 export * from './types/admin';
+export * from './types/diary';
 
 // API 模块导出
 export { UsersApi } from './apis/UsersApi';
@@ -36,6 +37,7 @@ export { CommunityApi } from './apis/CommunityApi';
 export { ConversationsApi } from './apis/ConversationsApi';
 export { DepressionScaleApi } from './apis/DepressionScaleApi';
 export { DepressionAssessmentApi } from './apis/DepressionAssessmentApi';
+export { DiariesApi } from './apis/DiariesApi';
 export { TestApi } from './apis/TestApi';
 
 // 工具函数导出

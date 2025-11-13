@@ -31,6 +31,9 @@ const selectedConvId = ref<number | null>(null);
 const selectedMessageId = ref<number | undefined>(undefined);
 const showFloatCard = ref(false);
 const floatCardDetections = ref<AdminRiskMessageDetection[]>([]);
+const batchProcessing = ref(false);
+const showBatchProcessDialog = ref(false);
+const batchProcessNotes = ref('');
 
 const title = computed(
   () =>
@@ -86,8 +89,8 @@ async function load(userId: number) {
         Date.parse(b.createdAt || "") - Date.parse(a.createdAt || "")
     );
     convos.value = merged;
-    // 默认选择第一条
-    if (merged.length) {
+    // 默认选择第一条（仅在没有当前选择时）
+    if (merged.length && !selectedConvId.value) {
       selectConversation(merged[0].conversationId);
     }
   } catch (e: any) {
@@ -228,6 +231,28 @@ function closeFloatCard() {
   showFloatCard.value = false;
 }
 
+async function handleRefresh() {
+  // 刷新当前用户的风险对话数据
+  if (props.userId) {
+    const currentConvId = selectedConvId.value;
+    const currentMsgId = selectedMessageId.value;
+    
+    await load(props.userId);
+    
+    // 恢复之前选中的会话和消息
+    if (currentConvId) {
+      selectedConvId.value = currentConvId;
+      selectedMessageId.value = currentMsgId;
+      
+      // 重新打开当前消息的风险卡片
+      if (currentConv.value && currentMsgId) {
+        const dets = getDetectionsForMessage(currentConv.value, currentMsgId);
+        floatCardDetections.value = dets.length ? dets : [{ messageId: currentMsgId, riskLevel: "NONE" } as AdminRiskMessageDetection];
+      }
+    }
+  }
+}
+
 function riskItemStyle(level?: RiskLevel) {
   const score = riskScore(level);
   const hue = 120 - 120 * score; // green -> red
@@ -235,6 +260,115 @@ function riskItemStyle(level?: RiskLevel) {
     '--risk-hue': hue.toString(),
     '--risk-score': score.toString(),
   };
+}
+
+// 检查会话中的检测是否全部已处理
+function isConversationProcessed(conv: AdminRiskConversation): boolean {
+  const detections = conv.detections || [];
+  if (detections.length === 0) return false;
+  return detections.every(d => d.processed === true);
+}
+
+// 获取会话的处理状态文本
+function getProcessStatus(conv: AdminRiskConversation): string {
+  const detections = conv.detections || [];
+  if (detections.length === 0) return '';
+  const processedCount = detections.filter(d => d.processed === true).length;
+  const totalCount = detections.length;
+  if (processedCount === 0) return '未处理';
+  if (processedCount === totalCount) return '已处理';
+  return `${processedCount}/${totalCount}`;
+}
+
+// 检查消息的所有检测是否都已处理
+function isMessageProcessed(conv: AdminRiskConversation, messageId: number): boolean {
+  const dets = getDetectionsForMessage(conv, messageId);
+  if (dets.length === 0) return false;
+  return dets.every(d => d.processed === true);
+}
+
+// 获取消息的处理状态（用于显示）
+function getMessageProcessStatus(conv: AdminRiskConversation, messageId: number): string {
+  const dets = getDetectionsForMessage(conv, messageId);
+  if (dets.length === 0) return '';
+  const processedCount = dets.filter(d => d.processed === true).length;
+  const totalCount = dets.length;
+  if (processedCount === 0) return '未处理';
+  if (processedCount === totalCount) return '已处理';
+  return `${processedCount}/${totalCount}`;
+}
+
+// 打开批量处理对话框
+function markAllAsProcessed() {
+  if (!currentConv.value || batchProcessing.value) return;
+  
+  const detections = currentConv.value.detections || [];
+  const unprocessedDetections = detections.filter(d => !d.processed && d.id);
+  
+  if (unprocessedDetections.length === 0) {
+    messageError('当前会话没有未处理的检测');
+    return;
+  }
+  
+  batchProcessNotes.value = '';
+  showBatchProcessDialog.value = true;
+}
+
+// 执行批量处理
+async function executeBatchProcess() {
+  if (!currentConv.value || batchProcessing.value) return;
+  
+  const detections = currentConv.value.detections || [];
+  const unprocessedDetections = detections.filter(d => !d.processed && d.id);
+  
+  if (unprocessedDetections.length === 0) {
+    messageError('当前会话没有未处理的检测');
+    return;
+  }
+  
+  batchProcessing.value = true;
+  let successCount = 0;
+  let failCount = 0;
+  
+  try {
+    // 并行处理所有检测
+    const promises = unprocessedDetections.map(d => 
+      adminApi.processRiskDetection(d.id!, {
+        processed: true,
+        processNotes: batchProcessNotes.value || '批量标记处理',
+      })
+        .then(() => { successCount++; })
+        .catch((err) => { 
+          failCount++;
+          console.error(`处理检测 ${d.id} 失败:`, err);
+        })
+    );
+    
+    await Promise.all(promises);
+    
+    // 刷新数据
+    await handleRefresh();
+    
+    showBatchProcessDialog.value = false;
+    batchProcessNotes.value = '';
+    
+    if (failCount === 0) {
+      messageError(`成功标记 ${successCount} 条检测为已处理`);
+    } else {
+      messageError(`处理完成：成功 ${successCount} 条，失败 ${failCount} 条`);
+    }
+  } catch (e: any) {
+    messageError(e?.message || '批量处理失败');
+  } finally {
+    batchProcessing.value = false;
+  }
+}
+
+// 关闭批量处理对话框
+function closeBatchProcessDialog() {
+  if (batchProcessing.value) return;
+  showBatchProcessDialog.value = false;
+  batchProcessNotes.value = '';
 }
 </script>
 
@@ -263,9 +397,17 @@ function riskItemStyle(level?: RiskLevel) {
                     c.title || "（无标题）"
                   }}</span>
                 </div>
-                <UiTag :style="tagStyle(c.aggregatedRiskLevel)">{{
-                  riskLevelCN(c.aggregatedRiskLevel)
-                }}</UiTag>
+                <div class="status-tags">
+                  <UiTag :style="tagStyle(c.aggregatedRiskLevel)">{{
+                    riskLevelCN(c.aggregatedRiskLevel)
+                  }}</UiTag>
+                  <span 
+                    v-if="c.detections && c.detections.length > 0"
+                    :class="['process-badge', { processed: isConversationProcessed(c) }]"
+                  >
+                    {{ getProcessStatus(c) }}
+                  </span>
+                </div>
               </div>
             </li>
           </ul>
@@ -279,6 +421,19 @@ function riskItemStyle(level?: RiskLevel) {
           <small>{{ currentConv?.title || "（无标题）" }}</small>
         </h3>
         <div class="meta">
+          <button 
+            class="batch-process-btn"
+            @click="markAllAsProcessed"
+            :disabled="batchProcessing || isConversationProcessed(currentConv)"
+            :title="isConversationProcessed(currentConv) ? '所有检测已处理' : '一键标记所有检测为已处理'"
+          >
+            <svg v-if="!batchProcessing" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 11L12 14L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span v-if="batchProcessing" class="spinner"></span>
+            {{ batchProcessing ? '处理中...' : '一键处理' }}
+          </button>
           <UiTag :style="tagStyle(currentConv?.aggregatedRiskLevel)">总结：{{ riskLevelCN(currentConv?.aggregatedRiskLevel) }}</UiTag>
           <!-- <span class="time">{{ formatToCN(currentConv?.createdAt) }}</span> -->
         </div>
@@ -294,6 +449,12 @@ function riskItemStyle(level?: RiskLevel) {
         >
           <template #indicator="{ message }">
             <template v-if="String(message.role).toLowerCase() === 'user'">
+              <span 
+                v-if="getDetectionsForMessage(currentConv, message.id as number).length > 0"
+                :class="['message-process-badge', { processed: isMessageProcessed(currentConv, message.id as number) }]"
+              >
+                {{ getMessageProcessStatus(currentConv, message.id as number) }}
+              </span>
               <UiTag
                 class="risk-indicator"
                 :style="tagStyle(getFirstDetectionOrNone(currentConv, message.id as number)?.riskLevel)"
@@ -312,6 +473,46 @@ function riskItemStyle(level?: RiskLevel) {
       </div>
     </main>
     
+    <!-- 批量处理对话框 -->
+    <transition name="fade">
+      <div v-if="showBatchProcessDialog" class="dialog-overlay" @click.self="closeBatchProcessDialog">
+        <div class="dialog-box">
+          <div class="dialog-header">
+            <h3>批量标记处理</h3>
+            <button class="close-btn" @click="closeBatchProcessDialog" :disabled="batchProcessing">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="dialog-content">
+            <p class="dialog-info">
+              将标记当前会话的 <strong>{{ currentConv?.detections?.filter(d => !d.processed && d.id).length || 0 }}</strong> 条未处理检测为已处理
+            </p>
+            <div class="form-group">
+              <label for="batch-notes">处理备注（可选）</label>
+              <textarea
+                id="batch-notes"
+                v-model="batchProcessNotes"
+                placeholder="请输入处理备注，例如：已电话联系用户，情况稳定"
+                rows="4"
+                :disabled="batchProcessing"
+              ></textarea>
+            </div>
+          </div>
+          <div class="dialog-footer">
+            <button class="btn-cancel" @click="closeBatchProcessDialog" :disabled="batchProcessing">
+              取消
+            </button>
+            <button class="btn-confirm" @click="executeBatchProcess" :disabled="batchProcessing">
+              <span v-if="batchProcessing" class="spinner"></span>
+              {{ batchProcessing ? '处理中...' : '确认标记' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- 风险详情卡片 -->
     <RiskFloatCard
       :visible="showFloatCard"
@@ -319,6 +520,7 @@ function riskItemStyle(level?: RiskLevel) {
       :conversation-id="selectedConvId ?? undefined"
       :message-id="selectedMessageId"
       @close="closeFloatCard"
+      @refresh="handleRefresh"
     />
   </div>
 </template>
@@ -373,6 +575,26 @@ function riskItemStyle(level?: RiskLevel) {
   gap: var(--spacing-sm);
   flex: 1;
   min-height: 0;
+  max-height: 100%;
+}
+
+.conv-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conv-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.conv-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 255, 218, 0.3);
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease;
+}
+
+.conv-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 255, 218, 0.5);
 }
 
 .conv-list .risk-item {
@@ -431,17 +653,19 @@ function riskItemStyle(level?: RiskLevel) {
 
 .conv-list .line-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
+  min-height: 48px;
 }
 
 .conv-list .cid-title {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
+  justify-content: center;
 }
 
 .conv-list .cid {
@@ -451,6 +675,7 @@ function riskItemStyle(level?: RiskLevel) {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   opacity: 0.9;
+  line-height: 1.2;
 }
 
 .conv-list .title {
@@ -461,6 +686,37 @@ function riskItemStyle(level?: RiskLevel) {
   text-overflow: ellipsis;
   font-weight: 500;
   line-height: 1.4;
+}
+
+.conv-list .status-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.process-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  white-space: nowrap;
+  min-width: 85px;
+  height: 25px;
+  line-height: 1;
+}
+
+.process-badge.processed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.3);
 }
 
 .main {
@@ -530,6 +786,7 @@ function riskItemStyle(level?: RiskLevel) {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  max-height: 100%;
 }
 
 .messages-block :deep(.msg-list) {
@@ -537,6 +794,30 @@ function riskItemStyle(level?: RiskLevel) {
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
+  max-height: 100%;
+}
+
+.message-process-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  white-space: nowrap;
+  min-width: 50px;
+  height: 22px;
+  line-height: 1;
+}
+
+.message-process-badge.processed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.3);
 }
 
 @keyframes fadeIn {
@@ -547,6 +828,288 @@ function riskItemStyle(level?: RiskLevel) {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.batch-process-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  border-radius: var(--radius-md);
+  background: rgba(100, 255, 218, 0.1);
+  color: var(--primary-cyan);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.batch-process-btn:hover:not(:disabled) {
+  background: rgba(100, 255, 218, 0.2);
+  border-color: rgba(100, 255, 218, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(100, 255, 218, 0.2);
+}
+
+.batch-process-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.batch-process-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.batch-process-btn svg {
+  flex-shrink: 0;
+}
+
+.batch-process-btn .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(100, 255, 218, 0.3);
+  border-top-color: var(--primary-cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: var(--spacing-xl);
+}
+
+.dialog-box {
+  background: rgba(28, 33, 40, 0.98);
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  width: 100%;
+  overflow: hidden;
+  animation: dialogSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: 1px solid var(--border);
+  background: rgba(36, 41, 50, 0.5);
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dialog-content {
+  padding: var(--spacing-xl);
+}
+
+.dialog-info {
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.dialog-info strong {
+  color: var(--primary-cyan);
+  font-weight: 600;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.form-group label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: var(--spacing-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: rgba(100, 255, 218, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.1);
+}
+
+.form-group textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-group textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-top: 1px solid var(--border);
+  background: rgba(36, 41, 50, 0.3);
+}
+
+.btn-cancel,
+.btn-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+.btn-cancel {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-primary);
+}
+
+.btn-confirm {
+  border-color: rgba(100, 255, 218, 0.3);
+  background: rgba(100, 255, 218, 0.15);
+  color: var(--primary-cyan);
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: rgba(100, 255, 218, 0.25);
+  border-color: rgba(100, 255, 218, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(100, 255, 218, 0.2);
+}
+
+.btn-confirm:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-cancel:disabled,
+.btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-confirm .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(100, 255, 218, 0.3);
+  border-top-color: var(--primary-cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-active .dialog-box {
+  animation: dialogSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-leave-active .dialog-box {
+  animation: dialogSlideOut 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dialogSlideOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
   }
 }
 </style>

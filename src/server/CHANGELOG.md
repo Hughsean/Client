@@ -2,6 +2,35 @@
 
 All notable changes to this SDK will be documented in this file.
 
+## 0.4.2 (2025-11-13)
+
+### 📓 新增：用户日记模块
+
+#### 新增 API
+
+- `DiariesApi.createDiary(data)` 创建日记并自动心情分析
+- `DiariesApi.updateDiary(id,data)` 更新日记并重新分析心情
+- `DiariesApi.deleteDiary(id)` 删除日记
+- `DiariesApi.getDiary(id)` 获取单条日记
+- `DiariesApi.listDiaries()` 获取用户全部日记
+
+#### 类型新增
+
+- `UserDiary` / `CreateDiaryRequest` / `UpdateDiaryRequest`
+
+#### 说明
+
+- 后端会调用 LLM 生成 `moodDescription`（失败回退为 `未能分析`）。
+- 无破坏性改动，原有功能不受影响。
+
+#### 文件变更
+
+- 新增：`types/diary.ts`, `apis/DiariesApi.ts`
+- 修改：`index.ts` 导出新增类型与 API
+- 更新：`README.md`, `CHANGELOG.md`
+
+---
+
 ## 0.4.1 (2025-11-13)
 
 ### 🩺 新增：风险检测处理接口

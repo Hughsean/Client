@@ -16,6 +16,7 @@ export interface AdminConversationMessage {
 }
 
 export interface AdminRiskMessageDetection {
+    id?: number;
     messageId?: number;
     riskLevel?: RiskLevel;
     polarity?: Polarity;

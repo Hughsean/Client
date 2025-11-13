@@ -2,7 +2,7 @@
 
 轻量 TypeScript 前端调用库，Browser/Node/Tauri 通用，按控制器分模块导出 API，内置超时、重试、拦截器、错误统一与 ApiResponse 自动解包。
 
-**版本：0.4.1**
+**版本：0.4.2**
 
 ## 安装
 
@@ -29,6 +29,7 @@ import {
   UsersApi,
   AdminApi,
   LlmSessionsApi,
+  DiariesApi,
 } from './src';
 
 // 1) 基础配置
@@ -183,6 +184,12 @@ await users.login({ username: 'demo', password: 'pass' });
 // 后续所有请求自动携带 Authorization: Bearer <token>
 const profile = await users.getById(1);
 const sessions = await new LlmSessionsApi().getAll();
+
+// ✅ 日记：创建并自动分析心情
+const diariesApi = new DiariesApi();
+const diary = await diariesApi.createDiary({ title: '今日记录', content: '完成重构，有点累但很满足。' });
+console.log(diary.moodDescription); // 自动心情描述
+const allMyDiaries = await diariesApi.listDiaries();
 ```
 
 ### 登出清除 Token
@@ -254,6 +261,65 @@ try {
 }
 ```
 
+## 用户日记 API (DiariesApi)
+
+提供用户个人日记 CRUD 与自动心情分析。后端调用 LLM 生成 `moodDescription`，失败时回退为 `"未能分析"`。
+
+### 方法列表
+
+| 方法 | 请求 | 说明 |
+|------|------|------|
+| `createDiary(data)` | `POST /api/diaries` | 创建日记并生成心情描述 |
+| `updateDiary(id,data)` | `PUT /api/diaries/{id}` | 更新日记并重新分析心情 |
+| `deleteDiary(id)` | `DELETE /api/diaries/{id}` | 删除日记 |
+| `getDiary(id)` | `GET /api/diaries/{id}` | 获取单条日记 |
+| `listDiaries()` | `GET /api/diaries` | 获取当前用户所有日记 |
+
+### 数据结构
+
+```ts
+interface UserDiary {
+  id: number;
+  userId: number;
+  title?: string;
+  content: string;
+  moodDescription?: string; // 自动生成
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+### 使用示例
+
+```ts
+import { DiariesApi } from './src';
+
+const diaries = new DiariesApi();
+// 创建
+const d = await diaries.createDiary({ title: '晨间记录', content: '起得很早，天气晴朗。' });
+console.log(d.moodDescription);
+
+// 列表
+const list = await diaries.listDiaries();
+
+// 详情
+const detail = await diaries.getDiary(d.id);
+
+// 更新
+await diaries.updateDiary(d.id, { title: '更新标题', content: '下午稍困，喝咖啡继续。' });
+
+// 删除
+await diaries.deleteDiary(d.id);
+```
+
+### 心情分析说明
+
+- 通过 LLM 文本分析生成一句话
+- 长度截断至 50 字符以内
+- 失败或空内容会返回 "未能分析" 或 "内容为空"
+
+---
+
 ## 错误模型
 
 - 业务错误（ApiResponse.success=false）会抛出 `ApiError`：
@@ -302,6 +368,7 @@ try {
 - `DepressionScaleApi`: 量表列表
 - `DepressionAssessmentApi`: 评估 CRUD
 - `TestApi`: 健康检查/示例
+ - `DiariesApi`: 用户日记 CRUD + 自动心情分析
 
 ## 自定义拦截器
 
@@ -390,6 +457,23 @@ const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion:
 ## 变更日志（前端 SDK）
 
 ### 0.4.1 (2025-11-13)
+### 0.4.2 (2025-11-13)
+
+**📓 新增用户日记功能**
+
+- 新增 `DiariesApi` 模块：`createDiary` / `updateDiary` / `deleteDiary` / `getDiary` / `listDiaries`
+- 自动心情分析字段 `moodDescription`（后端 LLM 分析）
+- 类型导出新增：`UserDiary`、`CreateDiaryRequest`、`UpdateDiaryRequest`
+
+**迁移指引：**
+- 无破坏性改动；若需展示心情，直接使用返回的 `moodDescription`
+- 前端无需再自行调用情绪分析 API
+
+**文件变更：**
+- 新增：`types/diary.ts`、`apis/DiariesApi.ts`
+- 修改：`index.ts` 导出新增 API 与类型
+- 更新：`README.md`, `CHANGELOG.md`
+
 
 **🩺 新增风险检测处理接口**
 

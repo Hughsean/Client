@@ -2,7 +2,7 @@
 // import { defineProps, defineEmits } from 'vue'
 import { formatToCN } from '../../utils/time'
 import { roleCN } from '../../utils/risk'
-import type { AdminConversationMessage, AdminRiskConversation } from '../../server'
+import type { AdminConversationMessage, AdminRiskConversation, RiskLevel } from '../../server'
 
 const props = defineProps<{
   conversation: AdminRiskConversation
@@ -25,6 +25,47 @@ function onClick(m: AdminConversationMessage) {
 function isActive(id?: number) {
   return Number(id) === Number(props.selectedMessageId)
 }
+
+// 获取消息的风险等级
+function getMessageRiskLevel(messageId?: number): RiskLevel | undefined {
+  if (!messageId) return undefined
+  const detections = props.conversation.detections || []
+  const messageDets = detections.filter(d => Number(d.messageId) === Number(messageId))
+  if (messageDets.length === 0) return undefined
+  // 返回最高风险等级
+  const levels: RiskLevel[] = ['CRISIS', 'HIGH', 'MEDIUM', 'LOW', 'NONE', 'UNKNOWN']
+  for (const level of levels) {
+    if (messageDets.some(d => d.riskLevel === level)) return level
+  }
+  return undefined
+}
+
+// 根据风险等级计算样式变量
+function getRiskStyle(messageId?: number, role?: string) {
+  if (String(role).toLowerCase() !== 'user') return {}
+  
+  const riskLevel = getMessageRiskLevel(messageId)
+  if (!riskLevel || riskLevel === 'NONE') return {}
+  
+  const riskScore = getRiskScore(riskLevel)
+  const hue = 120 - 120 * riskScore // green -> red
+  
+  return {
+    '--message-risk-hue': hue.toString(),
+    '--message-risk-score': riskScore.toString(),
+  }
+}
+
+function getRiskScore(level?: RiskLevel): number {
+  switch (level) {
+    case 'NONE': return 0
+    case 'LOW': return 0.25
+    case 'MEDIUM': return 0.5
+    case 'HIGH': return 0.75
+    case 'CRISIS': return 1
+    default: return 0
+  }
+}
 </script>
 
 <template>
@@ -32,7 +73,12 @@ function isActive(id?: number) {
     <li
       v-for="m in messages"
       :key="m.id"
-      :class="{ active: isActive(m.id) }"
+      :class="{ 
+        active: isActive(m.id),
+        'user-message': String(m.role).toLowerCase() === 'user',
+        'has-risk': getMessageRiskLevel(m.id) && getMessageRiskLevel(m.id) !== 'NONE'
+      }"
+      :style="getRiskStyle(m.id, m.role)"
       @click="onClick(m)"
     >
       <span class="role">{{ roleCN(m.role) }}</span>
@@ -57,6 +103,26 @@ function isActive(id?: number) {
   gap: var(--spacing-sm);
   flex: 1;
   min-height: 0;
+  max-height: 100%;
+}
+
+.msg-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.msg-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.msg-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 255, 218, 0.3);
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease;
+}
+
+.msg-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 255, 218, 0.5);
 }
 
 .msg-list li {
@@ -72,6 +138,25 @@ function isActive(id?: number) {
   position: relative;
   overflow: hidden;
   align-items: start;
+  flex-shrink: 0;
+  min-height: fit-content;
+}
+
+/* 用户消息根据风险等级着色 */
+.msg-list li.user-message.has-risk {
+  background: hsla(var(--message-risk-hue, 120), 40%, 50%, 0.08);
+  border-left: 3px solid hsla(var(--message-risk-hue, 120), 60%, 50%, 0.5);
+}
+
+.msg-list li.user-message.has-risk::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: hsla(var(--message-risk-hue, 120), 70%, 55%, 0.8);
+  opacity: 1;
 }
 
 .msg-list li::before {
@@ -90,6 +175,11 @@ function isActive(id?: number) {
   background: rgba(36, 41, 50, 0.7);
   border-color: rgba(100, 255, 218, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.msg-list li.user-message.has-risk:hover {
+  background: hsla(var(--message-risk-hue, 120), 40%, 50%, 0.15);
+  border-color: hsla(var(--message-risk-hue, 120), 60%, 50%, 0.6);
 }
 
 .msg-list li:hover::before {

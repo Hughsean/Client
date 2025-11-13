@@ -19,6 +19,7 @@ const styleObj = (props.style || {}) as Record<string, string>;
 .ui-tag {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: var(--spacing-xs) var(--spacing-md);
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -26,6 +27,8 @@ const styleObj = (props.style || {}) as Record<string, string>;
   border: 1px solid transparent;
   white-space: nowrap;
   transition: all var(--transition-base);
+  min-width: 85px;
+  text-align: center;
 }
 
 .ui-tag--default {
