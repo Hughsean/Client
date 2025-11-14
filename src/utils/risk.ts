@@ -69,6 +69,16 @@ export function intentCN(intent?: string) {
       return '叙述'
     case 'JOKE_SARCASM':
       return '玩笑/讽刺'
+    case 'CRISIS_SELF_HARM':
+      return '危机/自伤'
+    case 'CLARIFICATION_REQUEST':
+      return '澄清请求'
+    case 'FOLLOW_UP_QUESTION':
+      return '跟进问题'
+    case 'OPINION':
+      return '观点表达'
+    case 'TOXIC_ABUSE':
+      return '辱骂/有害'
     default:
       return '未知'
   }

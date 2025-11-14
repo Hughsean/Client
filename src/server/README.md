@@ -2,7 +2,7 @@
 
 轻量 TypeScript 前端调用库，Browser/Node/Tauri 通用，按控制器分模块导出 API，内置超时、重试、拦截器、错误统一与 ApiResponse 自动解包。
 
-**版本：0.4.3**
+**版本：0.4.4**
 
 ## 安装
 
@@ -492,6 +492,49 @@ const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion:
   - 后端当前返回 { sessionId, saved, message }
 
 ## 变更日志（前端 SDK）
+
+### 0.4.4 (2025-11-15)
+
+**🎯 意图检测增强**
+
+- **Intent 类型扩展**：新增 5 个意图枚举值，支持更精细的对话意图识别
+  - `CRISIS_SELF_HARM`: 危机/自伤自杀倾向（最高优先级）
+  - `CLARIFICATION_REQUEST`: 澄清请求/没听懂
+  - `FOLLOW_UP_QUESTION`: 跟进问题/后续追问
+  - `OPINION`: 观点表达/主观评价
+  - `TOXIC_ABUSE`: 辱骂/冒犯/有害言论
+
+- **类型定义更新**：
+```typescript
+export type Intent = 
+  | 'HELP_SEEKING'           // 求助意图
+  | 'VENTING'                // 情绪宣泄
+  | 'INFO_QUERY'             // 信息查询
+  | 'NARRATIVE'              // 叙事讲述
+  | 'JOKE_SARCASM'           // 玩笑讽刺
+  | 'CRISIS_SELF_HARM'       // 危机/自伤自杀倾向
+  | 'CLARIFICATION_REQUEST'  // 澄清请求
+  | 'FOLLOW_UP_QUESTION'     // 跟进问题
+  | 'OPINION'                // 观点表达
+  | 'TOXIC_ABUSE'            // 辱骂/有害言论
+  | 'UNKNOWN';               // 未知
+```
+
+**影响范围：**
+- `AdminRiskMessageDetection.intent` 字段现在支持更多枚举值
+- 后端风险检测系统已更新规则库，支持新意图的自动识别
+- LLM 检测器已配置上下文窗口，可基于历史对话分析累积风险
+
+**迁移指引：**
+- 现有代码无需修改，新的意图类型会在后端检测结果中自动返回
+- 前端可根据新增的意图类型进行差异化处理：
+```typescript
+if (detection.intent === 'CRISIS_SELF_HARM') {
+  // 危机处理：紧急通知、高优先级标记
+} else if (detection.intent === 'TOXIC_ABUSE') {
+  // 有害言论处理：内容审核、警告提示
+}
+```
 
 ### 0.4.3 (2025-11-14)
 

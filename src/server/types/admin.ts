@@ -3,7 +3,18 @@
 // 精确枚举映射后端 dev.x.detector.* 枚举，不再允许额外字符串取值
 export type RiskLevel = 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRISIS' | 'UNKNOWN';
 export type Polarity = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'MIXED' | 'UNKNOWN';
-export type Intent = 'HELP_SEEKING' | 'VENTING' | 'INFO_QUERY' | 'NARRATIVE' | 'JOKE_SARCASM' | 'UNKNOWN';
+export type Intent = 
+  | 'HELP_SEEKING'           // 求助意图
+  | 'VENTING'                // 情绪宣泄
+  | 'INFO_QUERY'             // 信息查询
+  | 'NARRATIVE'              // 叙事讲述
+  | 'JOKE_SARCASM'           // 玩笑讽刺
+  | 'CRISIS_SELF_HARM'       // 危机/自伤自杀倾向
+  | 'CLARIFICATION_REQUEST'  // 澄清请求
+  | 'FOLLOW_UP_QUESTION'     // 跟进问题
+  | 'OPINION'                // 观点表达
+  | 'TOXIC_ABUSE'            // 辱骂/有害言论
+  | 'UNKNOWN';               // 未知
 export type Target = 'SELF' | 'OTHER_INDIVIDUAL' | 'GROUP_ORG' | 'UNKNOWN';
 
 export interface AdminConversationMessage {
