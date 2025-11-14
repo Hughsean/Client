@@ -1,14 +1,14 @@
 // client/lib/src/index.ts
 
 // 配置
-export { 
-  getApiConfig, 
-  updateApiConfig, 
-  setBearerToken, 
-  getBearerToken, 
-  setAdminApiKey, 
-  getAdminApiKey, 
-  defaultApiConfig 
+export {
+  getApiConfig,
+  updateApiConfig,
+  setBearerToken,
+  getBearerToken,
+  setAdminApiKey,
+  getAdminApiKey,
+  defaultApiConfig
 } from './config/api.config';
 
 // HTTP 客户端与拦截器、错误类型

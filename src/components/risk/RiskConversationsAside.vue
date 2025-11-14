@@ -11,15 +11,12 @@ import type {
   AdminConversationMessage,
   AdminRiskMessageDetection,
 } from "../../server";
-import {
-  tagStyle,
-  riskLevelCN,
-} from "../../utils/risk";
+import { tagStyle, riskLevelCN } from "../../utils/risk";
 import RiskMessageList from "./RiskMessageList.vue";
 import RiskFloatCard from "./RiskFloatCard.vue";
-import UiSkeleton from '@/ui/UiSkeleton.vue'
-import UiEmpty from '@/ui/UiEmpty.vue'
-import UiTag from '@/ui/UiTag.vue'
+import UiSkeleton from "@/ui/UiSkeleton.vue";
+import UiEmpty from "@/ui/UiEmpty.vue";
+import UiTag from "@/ui/UiTag.vue";
 
 const props = defineProps<{ userId: number | null; user?: User | null }>();
 
@@ -33,7 +30,7 @@ const showFloatCard = ref(false);
 const floatCardDetections = ref<AdminRiskMessageDetection[]>([]);
 const batchProcessing = ref(false);
 const showBatchProcessDialog = ref(false);
-const batchProcessNotes = ref('');
+const batchProcessNotes = ref("");
 
 const title = computed(
   () =>
@@ -62,8 +59,7 @@ async function load(userId: number) {
         .getRiskConversations(userId)
         .catch<AdminRiskConversation[]>(() => []),
     ]);
-    // console.log(allConvs[0].createdAt);
-    
+
     const map = new Map<number, AdminRiskConversation>();
     for (const c of allConvs) {
       if (!c.id) continue;
@@ -220,8 +216,15 @@ function onSelectMessage(mid: number) {
   // 打开风险卡片
   if (currentConv.value) {
     const dets = getDetectionsForMessage(currentConv.value, mid);
-    if (dets.length || String(currentConv.value.messages?.find(m => m.id === mid)?.role).toLowerCase() === 'user') {
-      floatCardDetections.value = dets.length ? dets : [{ messageId: mid, riskLevel: "NONE" } as AdminRiskMessageDetection];
+    if (
+      dets.length ||
+      String(
+        currentConv.value.messages?.find((m) => m.id === mid)?.role
+      ).toLowerCase() === "user"
+    ) {
+      floatCardDetections.value = dets.length
+        ? dets
+        : [{ messageId: mid, riskLevel: "NONE" } as AdminRiskMessageDetection];
       showFloatCard.value = true;
     }
   }
@@ -236,18 +239,25 @@ async function handleRefresh() {
   if (props.userId) {
     const currentConvId = selectedConvId.value;
     const currentMsgId = selectedMessageId.value;
-    
+
     await load(props.userId);
-    
+
     // 恢复之前选中的会话和消息
     if (currentConvId) {
       selectedConvId.value = currentConvId;
       selectedMessageId.value = currentMsgId;
-      
+
       // 重新打开当前消息的风险卡片
       if (currentConv.value && currentMsgId) {
         const dets = getDetectionsForMessage(currentConv.value, currentMsgId);
-        floatCardDetections.value = dets.length ? dets : [{ messageId: currentMsgId, riskLevel: "NONE" } as AdminRiskMessageDetection];
+        floatCardDetections.value = dets.length
+          ? dets
+          : [
+              {
+                messageId: currentMsgId,
+                riskLevel: "NONE",
+              } as AdminRiskMessageDetection,
+            ];
       }
     }
   }
@@ -257,8 +267,8 @@ function riskItemStyle(level?: RiskLevel) {
   const score = riskScore(level);
   const hue = 120 - 120 * score; // green -> red
   return {
-    '--risk-hue': hue.toString(),
-    '--risk-score': score.toString(),
+    "--risk-hue": hue.toString(),
+    "--risk-score": score.toString(),
   };
 }
 
@@ -266,99 +276,108 @@ function riskItemStyle(level?: RiskLevel) {
 function isConversationProcessed(conv: AdminRiskConversation): boolean {
   const detections = conv.detections || [];
   if (detections.length === 0) return false;
-  return detections.every(d => d.processed === true);
+  return detections.every((d) => d.processed === true);
 }
 
 // 获取会话的处理状态文本
 function getProcessStatus(conv: AdminRiskConversation): string {
   const detections = conv.detections || [];
-  if (detections.length === 0) return '';
-  const processedCount = detections.filter(d => d.processed === true).length;
+  if (detections.length === 0) return "";
+  const processedCount = detections.filter((d) => d.processed === true).length;
   const totalCount = detections.length;
-  if (processedCount === 0) return '未处理';
-  if (processedCount === totalCount) return '已处理';
+  if (processedCount === 0) return "未处理";
+  if (processedCount === totalCount) return "已处理";
   return `${processedCount}/${totalCount}`;
 }
 
 // 检查消息的所有检测是否都已处理
-function isMessageProcessed(conv: AdminRiskConversation, messageId: number): boolean {
+function isMessageProcessed(
+  conv: AdminRiskConversation,
+  messageId: number
+): boolean {
   const dets = getDetectionsForMessage(conv, messageId);
   if (dets.length === 0) return false;
-  return dets.every(d => d.processed === true);
+  return dets.every((d) => d.processed === true);
 }
 
 // 获取消息的处理状态（用于显示）
-function getMessageProcessStatus(conv: AdminRiskConversation, messageId: number): string {
+function getMessageProcessStatus(
+  conv: AdminRiskConversation,
+  messageId: number
+): string {
   const dets = getDetectionsForMessage(conv, messageId);
-  if (dets.length === 0) return '';
-  const processedCount = dets.filter(d => d.processed === true).length;
+  if (dets.length === 0) return "";
+  const processedCount = dets.filter((d) => d.processed === true).length;
   const totalCount = dets.length;
-  if (processedCount === 0) return '未处理';
-  if (processedCount === totalCount) return '已处理';
+  if (processedCount === 0) return "未处理";
+  if (processedCount === totalCount) return "已处理";
   return `${processedCount}/${totalCount}`;
 }
 
 // 打开批量处理对话框
 function markAllAsProcessed() {
   if (!currentConv.value || batchProcessing.value) return;
-  
+
   const detections = currentConv.value.detections || [];
-  const unprocessedDetections = detections.filter(d => !d.processed && d.id);
-  
+  const unprocessedDetections = detections.filter((d) => !d.processed && d.id);
+
   if (unprocessedDetections.length === 0) {
-    messageError('当前会话没有未处理的检测');
+    messageError("当前会话没有未处理的检测");
     return;
   }
-  
-  batchProcessNotes.value = '';
+
+  batchProcessNotes.value = "";
   showBatchProcessDialog.value = true;
 }
 
 // 执行批量处理
 async function executeBatchProcess() {
   if (!currentConv.value || batchProcessing.value) return;
-  
+
   const detections = currentConv.value.detections || [];
-  const unprocessedDetections = detections.filter(d => !d.processed && d.id);
-  
+  const unprocessedDetections = detections.filter((d) => !d.processed && d.id);
+
   if (unprocessedDetections.length === 0) {
-    messageError('当前会话没有未处理的检测');
+    messageError("当前会话没有未处理的检测");
     return;
   }
-  
+
   batchProcessing.value = true;
   let successCount = 0;
   let failCount = 0;
-  
+
   try {
     // 并行处理所有检测
-    const promises = unprocessedDetections.map(d => 
-      adminApi.processRiskDetection(d.id!, {
-        processed: true,
-        processNotes: batchProcessNotes.value || '批量标记处理',
-      })
-        .then(() => { successCount++; })
-        .catch((err) => { 
+    const promises = unprocessedDetections.map((d) =>
+      adminApi
+        .processRiskDetection(d.id!, {
+          processed: true,
+          processNotes: batchProcessNotes.value || "批量标记处理",
+        })
+        .then(() => {
+          successCount++;
+        })
+        .catch((err) => {
           failCount++;
           console.error(`处理检测 ${d.id} 失败:`, err);
         })
     );
-    
+
     await Promise.all(promises);
-    
+
     // 刷新数据
     await handleRefresh();
-    
+
     showBatchProcessDialog.value = false;
-    batchProcessNotes.value = '';
-    
+    batchProcessNotes.value = "";
+
     if (failCount === 0) {
       messageError(`成功标记 ${successCount} 条检测为已处理`);
     } else {
       messageError(`处理完成：成功 ${successCount} 条，失败 ${failCount} 条`);
     }
   } catch (e: any) {
-    messageError(e?.message || '批量处理失败');
+    messageError(e?.message || "批量处理失败");
   } finally {
     batchProcessing.value = false;
   }
@@ -368,7 +387,7 @@ async function executeBatchProcess() {
 function closeBatchProcessDialog() {
   if (batchProcessing.value) return;
   showBatchProcessDialog.value = false;
-  batchProcessNotes.value = '';
+  batchProcessNotes.value = "";
 }
 </script>
 
@@ -402,9 +421,12 @@ function closeBatchProcessDialog() {
                     <UiTag :style="tagStyle(c.aggregatedRiskLevel)">{{
                       riskLevelCN(c.aggregatedRiskLevel)
                     }}</UiTag>
-                    <span 
+                    <span
                       v-if="c.detections && c.detections.length > 0"
-                      :class="['process-badge', { processed: isConversationProcessed(c) }]"
+                      :class="[
+                        'process-badge',
+                        { processed: isConversationProcessed(c) },
+                      ]"
                     >
                       {{ getProcessStatus(c) }}
                     </span>
@@ -423,20 +445,45 @@ function closeBatchProcessDialog() {
           <small>{{ currentConv?.title || "（无标题）" }}</small>
         </h3>
         <div class="meta">
-          <button 
+          <button
             class="batch-process-btn"
             @click="markAllAsProcessed"
             :disabled="batchProcessing || isConversationProcessed(currentConv)"
-            :title="isConversationProcessed(currentConv) ? '所有检测已处理' : '一键标记所有检测为已处理'"
+            :title="
+              isConversationProcessed(currentConv)
+                ? '所有检测已处理'
+                : '一键标记所有检测为已处理'
+            "
           >
-            <svg v-if="!batchProcessing" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 11L12 14L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              v-if="!batchProcessing"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M9 11L12 14L22 4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
             <span v-if="batchProcessing" class="spinner"></span>
-            {{ batchProcessing ? '处理中...' : '一键处理' }}
+            {{ batchProcessing ? "处理中..." : "一键处理" }}
           </button>
-          <UiTag :style="tagStyle(currentConv?.aggregatedRiskLevel)">总结：{{ riskLevelCN(currentConv?.aggregatedRiskLevel) }}</UiTag>
+          <UiTag :style="tagStyle(currentConv?.aggregatedRiskLevel)"
+            >总结：{{ riskLevelCN(currentConv?.aggregatedRiskLevel) }}</UiTag
+          >
           <!-- <span class="time">{{ formatToCN(currentConv?.createdAt) }}</span> -->
         </div>
       </div>
@@ -451,7 +498,7 @@ function closeBatchProcessDialog() {
         >
           <template #indicator="{ message }">
             <template v-if="String(message.role).toLowerCase() === 'user'">
-              <span 
+              <span
                 v-if="getDetectionsForMessage(currentConv, message.id as number).length > 0"
                 :class="['message-process-badge', { processed: isMessageProcessed(currentConv, message.id as number) }]"
               >
@@ -474,22 +521,47 @@ function closeBatchProcessDialog() {
         <UiEmpty v-else description="未选中会话" />
       </div>
     </main>
-    
+
     <!-- 批量处理对话框 -->
     <transition name="fade">
-      <div v-if="showBatchProcessDialog" class="dialog-overlay" @click.self="closeBatchProcessDialog">
+      <div
+        v-if="showBatchProcessDialog"
+        class="dialog-overlay"
+        @click.self="closeBatchProcessDialog"
+      >
         <div class="dialog-box">
           <div class="dialog-header">
             <h3>批量标记处理</h3>
-            <button class="close-btn" @click="closeBatchProcessDialog" :disabled="batchProcessing">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <button
+              class="close-btn"
+              @click="closeBatchProcessDialog"
+              :disabled="batchProcessing"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M18 6L6 18M6 6L18 18"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </button>
           </div>
           <div class="dialog-content">
             <p class="dialog-info">
-              将标记当前会话的 <strong>{{ currentConv?.detections?.filter(d => !d.processed && d.id).length || 0 }}</strong> 条未处理检测为已处理
+              将标记当前会话的
+              <strong>{{
+                currentConv?.detections?.filter((d) => !d.processed && d.id)
+                  .length || 0
+              }}</strong>
+              条未处理检测为已处理
             </p>
             <div class="form-group">
               <label for="batch-notes">处理备注（可选）</label>
@@ -503,12 +575,20 @@ function closeBatchProcessDialog() {
             </div>
           </div>
           <div class="dialog-footer">
-            <button class="btn-cancel" @click="closeBatchProcessDialog" :disabled="batchProcessing">
+            <button
+              class="btn-cancel"
+              @click="closeBatchProcessDialog"
+              :disabled="batchProcessing"
+            >
               取消
             </button>
-            <button class="btn-confirm" @click="executeBatchProcess" :disabled="batchProcessing">
+            <button
+              class="btn-confirm"
+              @click="executeBatchProcess"
+              :disabled="batchProcessing"
+            >
               <span v-if="batchProcessing" class="spinner"></span>
-              {{ batchProcessing ? '处理中...' : '确认标记' }}
+              {{ batchProcessing ? "处理中..." : "确认标记" }}
             </button>
           </div>
         </div>
@@ -639,7 +719,7 @@ function closeBatchProcessDialog() {
 }
 
 .conv-list .risk-item::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -667,8 +747,8 @@ function closeBatchProcessDialog() {
   border-color: hsla(var(--risk-hue, 120), 70%, 55%, 0.8);
   border-left-width: 4px;
   background: rgba(44, 51, 62, 0.9);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 
-              inset 0 0 0 1px hsla(var(--risk-hue, 120), 60%, 50%, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px hsla(var(--risk-hue, 120), 60%, 50%, 0.2);
 }
 
 .conv-list .risk-item.active::before {

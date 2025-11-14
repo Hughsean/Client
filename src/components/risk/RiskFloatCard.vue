@@ -164,6 +164,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
                     <strong>对象：</strong> {{ targetCN(d.target) }} &nbsp;
                     <strong>情感：</strong> {{ polarityCN(d.polarity) }}
                   </div>
+                  <div v-if="d.reason" class="d-reason">
+                    <strong>AI判断理由：</strong>
+                    <div class="reason-content">{{ d.reason }}</div>
+                  </div>
                   <div class="d-row">
                     <strong>处理状态：</strong>
                     <span :class="['status-badge', d.processed ? 'processed' : 'unprocessed']">
@@ -513,6 +517,31 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
   padding: var(--spacing-sm);
   background: rgba(100, 255, 218, 0.05);
   border-left: 3px solid var(--primary-cyan);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.d-reason {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border);
+}
+
+.d-reason strong {
+  color: var(--primary-cyan);
+  font-weight: 600;
+  display: block;
+  margin-bottom: var(--spacing-xs);
+}
+
+.reason-content {
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  padding: var(--spacing-md);
+  background: rgba(109, 40, 217, 0.1);
+  border-left: 3px solid #a78bfa;
   border-radius: var(--radius-sm);
   white-space: pre-wrap;
   word-break: break-word;

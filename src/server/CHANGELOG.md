@@ -2,6 +2,49 @@
 
 All notable changes to this SDK will be documented in this file.
 
+## 0.4.5 (2025-11-15)
+
+### 🧠 判断理由字段支持
+
+#### 新增字段
+
+- **AdminRiskMessageDetection.reason**: 新增 `reason` 字段，存储 LLM 检测器的判断依据
+  - 字段类型: `string | undefined`
+  - 字段说明: 简明扼要说明为何得出此风险等级、情绪和意图的结论（100字以内）
+  - 示例值: "当前消息表达持续的睡眠障碍和情绪低落，结合历史趋势风险有所上升"
+
+#### 使用示例
+
+```typescript
+const detection = riskConversations[0]?.detections[0];
+console.log('判断理由:', detection.reason);
+// 输出: "消息表达强烈的无助感和自伤倾向"
+```
+
+#### 影响范围
+
+- 风险检测结果现在包含 LLM 给出的判断理由，便于理解检测依据
+- 后端数据库已添加 `reason` 字段存储
+- LLM 提示词已更新，要求输出判断理由
+
+#### 迁移指引
+
+- 无破坏性改动，现有代码无需修改
+- 新字段为可选字段，旧数据可能为 `undefined`
+- 建议在前端 UI 中展示判断理由，提升风险评估的可解释性
+
+#### 文件变更
+
+- 修改: `types/admin.ts` - `AdminRiskMessageDetection` 接口新增 `reason` 字段
+- 修改: 后端 `DetectionResult.java` - 数据结构新增 `reason` 字段
+- 修改: 后端 `LlmRiskDetector.java` - 处理和解析 `reason` 字段
+- 修改: 后端提示词 `detector.txt` - 要求 LLM 输出判断理由
+- 修改: 数据库 `1-create.sql` - `risk_detection_results` 表新增 `reason` 字段
+- 更新: `README.md` - 添加 `reason` 字段使用示例
+- 更新: `CHANGELOG.md` - 版本记录
+
+---
+
 ## 0.4.4 (2025-11-15)
 
 ### 🎯 意图检测增强

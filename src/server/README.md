@@ -6,7 +6,7 @@
 
 ## 安装
 
-> 该 SDK 为源码形式放置于 `client/lib` 下，建议在你的前端项目中通过 tsconfig paths 或本地包引用使用。
+> 该 SDK 为源码形式放置于 `Client` 目录下，建议在你的前端项目中通过 tsconfig paths 或本地包引用使用。
 
 在 Node 环境下建议安装 fetch 兼容层（可选）：
 
@@ -59,6 +59,14 @@ setAdminApiKey('ADMIN_KEY_3f6e40cb43b742a0894754866c2e1abe');
 const admin = new AdminApi();
 const allUsers = await admin.getAllUsers();
 const riskConversations = await admin.getRiskConversations(1);
+
+// 查看风险检测详情（包含判断理由）
+const detection = riskConversations[0]?.detections[0];
+if (detection) {
+  console.log('风险等级:', detection.riskLevel);
+  console.log('判断理由:', detection.reason); // 新增：查看 LLM 给出的判断依据
+  console.log('证据:', detection.evidence);
+}
 
 // 处理风险检测结果（标记已处理 + 备注）
 await admin.processRiskDetection(123, {
@@ -492,6 +500,32 @@ const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion:
   - 后端当前返回 { sessionId, saved, message }
 
 ## 变更日志（前端 SDK）
+
+### 0.4.5 (2025-11-15)
+
+**🧠 判断理由字段支持**
+
+- **新增字段**：`AdminRiskMessageDetection.reason` - 存储 LLM 检测器的判断依据
+  - 字段类型：`string | undefined`
+  - 字段说明：简明扼要说明为何得出此风险等级、情绪和意图的结论（100字以内）
+  - 示例值："当前消息表达持续的睡眠障碍和情绪低落，结合历史趋势风险有所上升"
+
+- **使用示例**：
+```typescript
+const detection = riskConversations[0]?.detections[0];
+console.log('判断理由:', detection.reason);
+// 输出: "消息表达强烈的无助感和自伤倾向"
+```
+
+**影响范围：**
+- 风险检测结果现在包含 LLM 给出的判断理由，便于理解检测依据
+- 后端数据库已添加 `reason` 字段存储
+- LLM 提示词已更新，要求输出判断理由
+
+**迁移指引：**
+- 无破坏性改动，现有代码无需修改
+- 新字段为可选字段，旧数据可能为 `undefined`
+- 建议在前端 UI 中展示判断理由，提升风险评估的可解释性
 
 ### 0.4.4 (2025-11-15)
 
