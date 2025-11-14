@@ -122,7 +122,7 @@ import { useNavbarIsland } from "../composables/useNavbarIsland";
 import { TestApi } from "../server";
 import { exit } from "@tauri-apps/plugin-process";
 import { Window } from "@tauri-apps/api/window";
-
+import { confirm as tauriConfirm } from "@tauri-apps/plugin-dialog";
 const route = useRoute();
 const { navbarIslandContent } = useNavbarIsland();
 
@@ -153,13 +153,13 @@ const checkOnlineStatus = async () => {
     // 创建一个快速超时的 AbortController（2秒）
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
-    
-    await testApi.hello({ 
+
+    await testApi.hello({
       direct: true,
       retry: { retries: 0 }, // 禁用重试
-      signal: controller.signal 
+      signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
     isOnline.value = true;
   } catch (error) {
@@ -176,7 +176,13 @@ const onlineStatusText = computed(() => {
 
 // 退出程序（兼容 macOS：先正常关闭窗口，再兜底 exit）
 const handleExit = async () => {
-  if (!confirm("确定要退出程序吗？")) return;
+  if (
+    !(await tauriConfirm("确定要退出程序吗？", {
+      title: "AI-Admin",
+      kind: "warning",
+    }))
+  )
+    return;
   const current = Window.getCurrent();
   try {
     // 优先尝试正常关闭当前窗口（macOS 下更可靠）
