@@ -4,14 +4,35 @@
       <!-- 左侧：品牌区域 -->
       <div class="navbar-brand">
         <div class="brand-logo">
-          <svg width="32" height="32" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="60" cy="35" r="15" fill="#FFC131"/>
-            <circle cx="60" cy="85" r="15" fill="#24C8DB"/>
-            <path d="M60 50 Q80 60, 60 70 Q40 60, 60 50" fill="url(#gradient1)"/>
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 120 120"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="60" cy="35" r="15" fill="#FFC131" />
+            <circle cx="60" cy="85" r="15" fill="#24C8DB" />
+            <path
+              d="M60 50 Q80 60, 60 70 Q40 60, 60 50"
+              fill="url(#gradient1)"
+            />
             <defs>
-              <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#FFC131;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#24C8DB;stop-opacity:1" />
+              <linearGradient
+                id="gradient1"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop
+                  offset="0%"
+                  style="stop-color: #ffc131; stop-opacity: 1"
+                />
+                <stop
+                  offset="100%"
+                  style="stop-color: #24c8db; stop-opacity: 1"
+                />
               </linearGradient>
             </defs>
           </svg>
@@ -23,9 +44,13 @@
       <div class="navbar-island">
         <div class="island-wrapper">
           <transition name="island-content" mode="out-in">
-            <div v-if="hasIslandContent" :key="route.name as string" class="island-content">
-              <component 
-                :is="navbarIslandContent!.component" 
+            <div
+              v-if="hasIslandContent"
+              :key="route.name as string"
+              class="island-content"
+            >
+              <component
+                :is="navbarIslandContent!.component"
                 v-bind="navbarIslandContent!.props"
               />
             </div>
@@ -40,21 +65,47 @@
       <div class="navbar-actions">
         <slot name="actions">
           <!-- 在线状态指示器 -->
-          <div 
-            class="status-indicator" 
+          <div
+            class="status-indicator"
             :class="{ offline: !isOnline }"
             @click="checkOnlineStatus"
-            :title="isOnline ? '服务器在线 - 点击重新检测' : '服务器离线 - 点击重试'"
+            :title="
+              isOnline ? '服务器在线 - 点击重新检测' : '服务器离线 - 点击重试'
+            "
           >
             <span class="status-dot" :class="{ offline: !isOnline }"></span>
             <span class="status-text">{{ onlineStatusText }}</span>
           </div>
           <!-- 退出按钮 -->
           <button class="exit-button" @click="handleExit" title="退出程序">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M16 17L21 12L16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M16 17L21 12L16 7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M21 12H9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
             <span class="exit-text">退出</span>
           </button>
@@ -69,7 +120,8 @@ import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { useRoute } from "vue-router";
 import { useNavbarIsland } from "../composables/useNavbarIsland";
 import { TestApi } from "../server";
-import { exit } from '@tauri-apps/plugin-process';
+import { exit } from "@tauri-apps/plugin-process";
+import { Window } from "@tauri-apps/api/window";
 
 const route = useRoute();
 const { navbarIslandContent } = useNavbarIsland();
@@ -79,13 +131,13 @@ const hasIslandContent = computed(() => !!navbarIslandContent.value);
 
 // 页面标题映射
 const pageTitleMap: Record<string, string> = {
-  'Users': '👥 用户管理',
-  'UserConversations': '💬 对话监控',
-  'Splash': '欢迎',
+  Users: "👥 用户管理",
+  UserConversations: "💬 对话监控",
+  Splash: "欢迎",
 };
 
 const pageTitle = computed(() => {
-  return pageTitleMap[route.name as string] || '管理系统';
+  return pageTitleMap[route.name as string] || "管理系统";
 });
 
 // 在线状态检测
@@ -98,28 +150,53 @@ const checkOnlineStatus = async () => {
   if (isChecking.value) return;
   isChecking.value = true;
   try {
-    await testApi.hello();
+    // 创建一个快速超时的 AbortController（2秒）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    
+    await testApi.hello({ 
+      direct: true,
+      retry: { retries: 0 }, // 禁用重试
+      signal: controller.signal 
+    });
+    
+    clearTimeout(timeoutId);
     isOnline.value = true;
   } catch (error) {
     isOnline.value = false;
-    console.error('服务器连接检测失败:', error);
+    console.error("服务器连接检测失败:", error);
   } finally {
     isChecking.value = false;
   }
 };
 
 const onlineStatusText = computed(() => {
-  return isOnline.value ? '在线' : '离线';
+  return isOnline.value ? "在线" : "离线";
 });
 
-// 退出程序
+// 退出程序（兼容 macOS：先正常关闭窗口，再兜底 exit）
 const handleExit = async () => {
-  if (confirm('确定要退出程序吗？')) {
+  if (!confirm("确定要退出程序吗？")) return;
+  const current = Window.getCurrent();
+  try {
+    // 优先尝试正常关闭当前窗口（macOS 下更可靠）
+    await current.close();
+    // 若窗口关闭后进程仍存活，延迟再尝试 exit 兜底
+    setTimeout(async () => {
+      try {
+        await exit(0);
+      } catch (e) {
+        // 兜底失败直接忽略，不影响用户体验
+        console.warn("exit 调用失败，忽略:", e);
+      }
+    }, 120);
+  } catch (err) {
+    console.error("窗口关闭失败，尝试直接退出:", err);
     try {
       await exit(0);
-    } catch (error) {
-      console.error('退出失败:', error);
-      // 如果 exit 失败，尝试关闭窗口
+    } catch (e2) {
+      console.error("最终退出失败:", e2);
+      // 最后兜底：浏览器环境尝试关闭（仅开发调试时有效）
       window.close();
     }
   }
@@ -128,8 +205,8 @@ const handleExit = async () => {
 onMounted(() => {
   // 立即检测一次
   checkOnlineStatus();
-  // 每5秒检测一次在线状态
-  statusCheckInterval = window.setInterval(checkOnlineStatus, 5000);
+  // 每2分钟检测一次在线状态
+  statusCheckInterval = window.setInterval(checkOnlineStatus, 120000);
 });
 
 onBeforeUnmount(() => {
@@ -198,12 +275,14 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: float 3s ease-in-out infinite, logoScale 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s backwards;
+  animation: float 3s ease-in-out infinite,
+    logoScale 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s backwards;
   flex-shrink: 0;
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -229,7 +308,11 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-lg);
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, var(--primary-cyan), var(--secondary-orange));
+  background: linear-gradient(
+    135deg,
+    var(--primary-cyan),
+    var(--secondary-orange)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -275,6 +358,7 @@ onBeforeUnmount(() => {
 /* 灵动岛包装器 - 保持固定高度 */
 .island-wrapper {
   position: relative;
+  width: 100%;
   height: 44px;
   display: flex;
   align-items: center;
@@ -284,6 +368,9 @@ onBeforeUnmount(() => {
 .island-content,
 .island-empty {
   position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   height: 44px;
   display: flex;
   align-items: center;
@@ -309,8 +396,7 @@ onBeforeUnmount(() => {
   height: 32px;
   display: flex;
   align-items: center;
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.2),
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2),
     0 0 0 1px rgba(100, 255, 218, 0.1) inset;
 }
 
@@ -452,7 +538,7 @@ onBeforeUnmount(() => {
   .navbar-island {
     max-width: 600px;
   }
-  
+
   .island-wrapper {
     height: 44px;
   }
@@ -463,30 +549,30 @@ onBeforeUnmount(() => {
     padding: var(--spacing-xs) var(--spacing-md);
     gap: var(--spacing-sm);
   }
-  
+
   .brand-title {
     font-size: var(--font-size-base);
   }
-  
+
   .navbar-island {
     max-width: 400px;
     height: 48px;
   }
-  
+
   .island-wrapper {
     height: 36px;
   }
-  
+
   .island-page-title {
     font-size: var(--font-size-sm);
     height: 28px;
     padding: 4px 12px;
   }
-  
+
   .status-text {
     display: none;
   }
-  
+
   .exit-text {
     display: none;
   }
@@ -496,15 +582,15 @@ onBeforeUnmount(() => {
   .brand-title {
     display: none;
   }
-  
+
   .navbar-brand {
     min-width: auto;
   }
-  
+
   .navbar-island {
     max-width: 250px;
   }
-  
+
   .island-wrapper {
     height: 36px;
   }

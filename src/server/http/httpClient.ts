@@ -19,6 +19,8 @@ export interface RequestOptions<TBody = any> {
     maxDelayMs: number;
     backoffFactor: number;
   }>;
+  // 直连，跳过JWT，AdminKey认证
+  direct?: boolean;
   // 自定义解包
   unwrapHook?: <T>(resp: ApiResponse<T>) => T;
   // 额外 query 构造（优先级高于 params）
@@ -95,34 +97,38 @@ export async function request<T = any>(method: HttpMethod, path: string, options
   let url = cfg.baseURL.replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path) + qs;
 
   const finalHeaders: Record<string, string> = { ...cfg.defaultHeaders, ...headers };
-  
-  // 根据配置决定使用管理员 API Key 还是普通用户 JWT Token
-  if (cfg.isAdminMode) {
-    // 管理员模式：使用 Admin API Key（RSA 加密传输）
-    const adminKey = getAdminApiKey();
-    if (adminKey) {
-      try {
-        // 获取公钥并加密 API Key
-        const publicKey = await getPublicKey();
-        const encryptedKey = await rsaEncrypt(adminKey, publicKey);
-        finalHeaders['X-Admin-API-Key'] = encryptedKey;
-      } catch (error) {
-        console.error('加密管理员 API Key 失败:', error);
-        throw new ApiError({
-          status: 0,
-          code: 'ENCRYPTION_ERROR',
-          message: '管理员 API Key 加密失败',
-          details: { error }
-        });
+
+  // 网络直连
+  if (!options.direct) {
+    // 根据配置决定使用管理员 API Key 还是普通用户 JWT Token
+    if (cfg.isAdminMode) {
+      // 管理员模式：使用 Admin API Key（RSA 加密传输）
+      const adminKey = getAdminApiKey();
+      if (adminKey) {
+        try {
+          // 获取公钥并加密 API Key
+          const publicKey = await getPublicKey();
+          const encryptedKey = await rsaEncrypt(adminKey, publicKey);
+          finalHeaders['X-Admin-API-Key'] = encryptedKey;
+        } catch (error) {
+          console.error('加密管理员 API Key 失败:', error);
+          throw new ApiError({
+            status: 0,
+            code: 'ENCRYPTION_ERROR',
+            message: '管理员 API Key 加密失败',
+            details: { error }
+          });
+        }
+      } else {
+        console.warn('管理员模式已启用，但未设置 Admin API Key');
+        // alert('管理员模式已启用，但未设置 Admin API Key');
       }
     } else {
-      console.warn('管理员模式已启用，但未设置 Admin API Key');
-    }
-  } else {
-    // 普通用户模式：使用 JWT Token
-    const token = getBearerToken();
-    if (token) {
-      finalHeaders['Authorization'] = `Bearer ${token}`;
+      // 普通用户模式：使用 JWT Token
+      const token = getBearerToken();
+      if (token) {
+        finalHeaders['Authorization'] = `Bearer ${token}`;
+      }
     }
   }
 

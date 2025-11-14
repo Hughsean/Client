@@ -35,7 +35,7 @@ export function formatToCN(input?: string | number | Date | null, withSeconds = 
   const hh = pad2(beijing.getUTCHours())
   const mm = pad2(beijing.getUTCMinutes())
   const ss = pad2(beijing.getUTCSeconds())
-  console.log(`${Y}-${M}-${D} ${hh}:${mm}${withSeconds ? `:${ss}` : ''}`);
+  // console.log(`${Y}-${M}-${D} ${hh}:${mm}${withSeconds ? `:${ss}` : ''}`);
 
   return `${Y}-${M}-${D} ${hh}:${mm}${withSeconds ? `:${ss}` : ''}`
 }

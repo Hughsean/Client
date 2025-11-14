@@ -2,6 +2,47 @@
 
 All notable changes to this SDK will be documented in this file.
 
+## 0.4.3 (2025-11-14)
+
+### 🔧 增强请求控制
+
+#### 新增特性
+
+- **RequestOptions.direct**: 新增 `direct` 选项，支持跳过 JWT/Admin API Key 认证的直连模式
+- **TestApi 增强**: `TestApi.hello()` 方法现在接受可选的 `RequestOptions` 参数
+- **在线状态检测优化**: 优化健康检查逻辑，使用 `direct: true` 避免认证失败干扰
+
+#### 使用示例
+
+```typescript
+import { TestApi } from './src';
+
+const testApi = new TestApi();
+
+// 直连调用健康检查，不携带认证信息
+await testApi.hello({ 
+  direct: true,
+  retry: { retries: 0 },
+  signal: controller.signal 
+});
+```
+
+#### 迁移指引
+
+- 无破坏性改动，所有现有代码保持兼容
+- 推荐在调用公开接口或健康检查时使用 `direct: true`
+- 优化前端在线状态检测，避免因认证过期导致误判离线
+
+#### 文件变更
+
+- 修改：`http/httpClient.ts` - 新增 `direct` 选项处理逻辑
+- 修改：`apis/TestApi.ts` - 方法签名支持 `RequestOptions`
+- 修改：前端组件 - 在线状态检测使用直连模式
+- 更新：`README.md` - 添加直连模式文档
+- 更新：`CHANGELOG.md` - 版本记录
+
+---
+
 ## 0.4.2 (2025-11-13)
 
 ### 📓 新增：用户日记模块

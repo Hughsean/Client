@@ -2,7 +2,7 @@
 
 轻量 TypeScript 前端调用库，Browser/Node/Tauri 通用，按控制器分模块导出 API，内置超时、重试、拦截器、错误统一与 ApiResponse 自动解包。
 
-**版本：0.4.2**
+**版本：0.4.3**
 
 ## 安装
 
@@ -236,6 +236,43 @@ const currentToken = getBearerToken();
 setBearerToken(null);
 ```
 
+## 请求选项 (RequestOptions)
+
+SDK 的所有 API 方法都支持传入可选的 `RequestOptions` 参数，用于控制请求行为：
+
+```ts
+interface RequestOptions {
+  params?: Record<string, any>;      // URL 查询参数
+  body?: any;                         // 请求体
+  headers?: Record<string, string>;   // 额外请求头
+  signal?: AbortSignal;               // 用于取消请求
+  retry?: Partial<RetryConfig>;       // 重试配置
+  direct?: boolean;                   // 直连模式，跳过认证（JWT/AdminKey）
+  unwrapHook?: (resp) => any;         // 自定义响应解包
+  query?: Record<string, any>;        // 额外查询参数（优先级高于 params）
+}
+```
+
+### 直连模式 (`direct`)
+
+某些场景下（如健康检查、公开接口），您可能不希望发送认证信息。使用 `direct: true` 可跳过所有认证：
+
+```ts
+const testApi = new TestApi();
+
+// 直连调用，不携带 JWT Token 或 Admin API Key
+await testApi.hello({ 
+  direct: true,
+  retry: { retries: 0 },  // 禁用重试
+  signal: controller.signal 
+});
+```
+
+**适用场景：**
+- 健康检查接口
+- 公开 API 端点
+- 避免认证失败影响请求
+
 ## LLM 会话最小示例（含 Abort、重试）
 
 ```ts
@@ -456,8 +493,25 @@ const msgResp = await api.postMessage(resp.sessionId, { text: '你好', emotion:
 
 ## 变更日志（前端 SDK）
 
-### 0.4.1 (2025-11-13)
+### 0.4.3 (2025-11-14)
+
+**🔧 增强请求控制**
+
+- 新增 `RequestOptions.direct` 选项：支持跳过认证的直连模式
+- `TestApi.hello()` 现在接受 `RequestOptions` 参数，支持自定义超时、重试等
+- 优化在线状态检测逻辑，避免认证失败干扰
+
+**迁移指引：**
+- 无破坏性改动，原有代码无需修改
+- 如需调用公开接口或健康检查，推荐使用 `direct: true`
+
+**文件变更：**
+- 修改：`http/httpClient.ts` - 新增 `direct` 选项支持
+- 修改：`apis/TestApi.ts` - 方法签名增加 `options` 参数
+- 更新：`README.md`, `CHANGELOG.md`
+
 ### 0.4.2 (2025-11-13)
+### 0.4.1 (2025-11-13)
 
 **📓 新增用户日记功能**
 

@@ -19,11 +19,11 @@
       </video>
       
       <!-- 光效层 -->
-      <div class="light-effects">
+      <!-- <div class="light-effects">
         <div class="light-beam light-beam-1"></div>
         <div class="light-beam light-beam-2"></div>
         <div class="light-beam light-beam-3"></div>
-      </div>
+      </div> -->
       
       <!-- 可选：跳过按钮 -->
       <Transition name="button-fade">
@@ -104,7 +104,12 @@ const navigateToMain = () => {
   
   // 等待过渡动画完成后再跳转
   setTimeout(() => {
-    router.replace({ name: 'Users' })
+    // dev 模式使用 push 方便调试，release 模式使用 replace 避免返回
+    if (import.meta.env.DEV) {
+      router.push({ name: 'Users' })
+    } else {
+      router.replace({ name: 'Users' })
+    }
   }, 800) // 与 CSS 过渡时间匹配
 }
 </script>
