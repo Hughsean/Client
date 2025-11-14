@@ -376,43 +376,45 @@ function closeBatchProcessDialog() {
   <div class="risk-aside-layout">
     <aside class="aside">
       <h3 class="aside-title">风险对话 - {{ title }}</h3>
-      <UiSkeleton :loading="loading" :rows="6">
-        <template #default>
-          <UiEmpty v-if="!convos.length" description="暂无对话" />
-          <ul v-else class="conv-list">
-            <li
-              v-for="c in convos"
-              :key="c.conversationId"
-              :class="[
-                'risk-item',
-                { active: c.conversationId === selectedConvId },
-              ]"
-              :style="riskItemStyle(c.aggregatedRiskLevel)"
-              @click="selectConversation(c.conversationId)"
-            >
-              <div class="line-top">
-                <div class="cid-title">
-                  <span class="cid">#{{ c.conversationId }}</span>
-                  <span class="title" :title="c.title || '-'">{{
-                    c.title || "（无标题）"
-                  }}</span>
+      <div class="aside-content">
+        <UiSkeleton :loading="loading" :rows="6">
+          <template #default>
+            <UiEmpty v-if="!convos.length" description="暂无对话" />
+            <ul v-else class="conv-list">
+              <li
+                v-for="c in convos"
+                :key="c.conversationId"
+                :class="[
+                  'risk-item',
+                  { active: c.conversationId === selectedConvId },
+                ]"
+                :style="riskItemStyle(c.aggregatedRiskLevel)"
+                @click="selectConversation(c.conversationId)"
+              >
+                <div class="line-top">
+                  <div class="cid-title">
+                    <span class="cid">#{{ c.conversationId }}</span>
+                    <span class="title" :title="c.title || '-'">{{
+                      c.title || "（无标题）"
+                    }}</span>
+                  </div>
+                  <div class="status-tags">
+                    <UiTag :style="tagStyle(c.aggregatedRiskLevel)">{{
+                      riskLevelCN(c.aggregatedRiskLevel)
+                    }}</UiTag>
+                    <span 
+                      v-if="c.detections && c.detections.length > 0"
+                      :class="['process-badge', { processed: isConversationProcessed(c) }]"
+                    >
+                      {{ getProcessStatus(c) }}
+                    </span>
+                  </div>
                 </div>
-                <div class="status-tags">
-                  <UiTag :style="tagStyle(c.aggregatedRiskLevel)">{{
-                    riskLevelCN(c.aggregatedRiskLevel)
-                  }}</UiTag>
-                  <span 
-                    v-if="c.detections && c.detections.length > 0"
-                    :class="['process-badge', { processed: isConversationProcessed(c) }]"
-                  >
-                    {{ getProcessStatus(c) }}
-                  </span>
-                </div>
-              </div>
-            </li>
-          </ul>
-        </template>
-      </UiSkeleton>
+              </li>
+            </ul>
+          </template>
+        </UiSkeleton>
+      </div>
     </aside>
     <main class="main" v-if="currentConv">
       <div class="main-header">
@@ -545,8 +547,8 @@ function closeBatchProcessDialog() {
   background: rgba(16, 20, 26, 0.8);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   min-height: 0;
+  max-height: 100%;
 }
 
 .aside-title {
@@ -564,6 +566,30 @@ function closeBatchProcessDialog() {
   align-items: center;
 }
 
+.aside-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.aside-content :deep(.ui-skeleton) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.aside-content :deep(.ui-skeleton__content) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .conv-list {
   list-style: none;
   margin: 0;
@@ -575,7 +601,6 @@ function closeBatchProcessDialog() {
   gap: var(--spacing-sm);
   flex: 1;
   min-height: 0;
-  max-height: 100%;
 }
 
 .conv-list::-webkit-scrollbar {
